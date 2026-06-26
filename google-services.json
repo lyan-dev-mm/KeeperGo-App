@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "501348665334",
+    "project_id": "keeper-go-112cf",
+    "storage_bucket": "keeper-go-112cf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501348665334:android:564a7bfe898aa8f96229d7",
+        "android_client_info": {
+          "package_name": "com.keepergo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVoDZVwXvzvFuhUVHbn3A_CVi9ebqbVTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
