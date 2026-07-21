@@ -54,7 +54,6 @@ npx expo start
 6. Escanear el código QR con Expo Go (Android/iOS)
 
 * Presionar w para abrir en navegador
-
 # Estructura del Proyecto
 ```text
 KeeperGo-App/
@@ -89,6 +88,7 @@ KeeperGo-App/
 └── tsconfig.json                 # Configuración de TypeScript
 ```
 # Tecnologías
+
 
 | Tecnología           | Versión | Propósito                                    |
 |----------------------|---------|----------------------------------------------|
