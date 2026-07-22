@@ -1,20 +1,38 @@
 {
   "expo": {
-    "name": "KeeperGo",
-    "slug": "keepergo-app",
-    "scheme": "keepergo",
+    "name": "KeeperGo-App",
+    "slug": "KeeperGo-App",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "plugins": [
-      "expo-router",
-      "expo-secure-store"
-    ],
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "bundleIdentifier": "com.example.keepergoApp"
+      "supportsTablet": true,
+	"bundleIdentifier": "com.keepergo.app",
+	"googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
-      "package": "com.example.keepergoApp"
-    }
+	"package": "com.keepergo.app",
+      	"googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
+    ]
   }
 }
