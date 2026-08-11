@@ -1,15 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-// Importamos el servicio seguro 
+
+// Importamos tus dos pantallas
+import AskLocation from './app/(auth)/ask-location';
+import RegisterLocation from './app/(auth)/register-location';
 
 export default function App() {
-
-  // El useEffect se ejecuta automáticamente cuando la app se abre
+  // Estado para controlar qué pantalla se muestra
+  const [currentScreen, setCurrentScreen] = useState('askLocation');
 
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
+      {/* Lógica de navegación simple */}
+      {currentScreen === 'askLocation' ? (
+        <AskLocation 
+          onAccept={() => setCurrentScreen('registerLocation')} 
+          onDecline={() => console.log('Aquí irá la siguiente pantalla del equipo')} 
+        />
+      ) : (
+        <RegisterLocation />
+      )}
       <StatusBar style="auto" />
     </View>
   );
@@ -19,7 +30,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
