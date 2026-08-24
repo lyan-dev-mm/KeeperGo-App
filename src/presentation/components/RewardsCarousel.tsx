@@ -6,9 +6,10 @@ import {
   StyleSheet,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { MILESTONES } from '../../../constants/Milestones';
+import { useMilestones } from '../hooks/useMilestones';
 
 interface RewardsCarouselProps {
   bestStreak: number;
@@ -18,12 +19,31 @@ const CARD_WIDTH = 110;
 const CARD_GAP = 12;
 
 export function RewardsCarousel({ bestStreak }: RewardsCarouselProps) {
+  const { milestones, isLoading } = useMilestones();
   const [activeIndex, setActiveIndex] = useState(0);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
     setActiveIndex(index);
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>Recompensas por racha</Text>
+        <ActivityIndicator color="#4CAF50" style={{ marginTop: 10 }} />
+      </View>
+    );
+  }
+
+  if (milestones.length === 0) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>Recompensas por racha</Text>
+        <Text style={styles.emptyText}>Todavía no hay recompensas configuradas.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.card}>
@@ -35,10 +55,10 @@ export function RewardsCarousel({ bestStreak }: RewardsCarouselProps) {
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
       >
-        {MILESTONES.map((milestone, index) => {
+        {milestones.map((milestone) => {
           const achieved = bestStreak >= milestone.days;
           return (
-            <View key={milestone.days} style={styles.rewardCard}>
+            <View key={milestone.id} style={styles.rewardCard}>
               <Ionicons
                 name={achieved ? 'checkmark-circle' : 'lock-closed'}
                 size={26}
@@ -53,7 +73,7 @@ export function RewardsCarousel({ bestStreak }: RewardsCarouselProps) {
         })}
       </ScrollView>
       <View style={styles.dotsRow}>
-        {MILESTONES.map((_, index) => (
+        {milestones.map((_, index) => (
           <View key={index} style={[styles.dot, index === activeIndex && styles.dotActive]} />
         ))}
       </View>
@@ -64,6 +84,7 @@ export function RewardsCarousel({ bestStreak }: RewardsCarouselProps) {
 const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 18, marginTop: 16 },
   title: { fontSize: 15, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)', marginBottom: 12 },
+  emptyText: { fontSize: 12, color: '#9E9E9E' },
   scrollContent: { paddingRight: 8 },
   rewardCard: {
     width: CARD_WIDTH,

@@ -12,6 +12,7 @@ import {
   setRememberMe as saveRememberMe,
   getRememberMe as readRememberMe,
 } from '../../infrastructure/storage/preferences';
+import { UserProfileRepositoryImpl } from './auth/UserProfileRepositoryImpl';
 
 function handleFirebaseError(error: AuthError): string {
   switch (error.code) {
@@ -27,6 +28,8 @@ function handleFirebaseError(error: AuthError): string {
       return `Error: ${error.message}`;
   }
 }
+
+const userProfileRepository = new UserProfileRepositoryImpl();
 
 export class AuthRepositoryImpl implements AuthRepository {
   async login(email: string, password: string): Promise<UserEntity | null> {
@@ -49,6 +52,20 @@ export class AuthRepositoryImpl implements AuthRepository {
       if (fullName) {
         await updateProfile(result.user, { displayName: fullName });
       }
+
+      // Crea también el documento de perfil en Firestore (colección "users"),
+      // necesario para que el panel de administración pueda listar usuarios.
+      try {
+        await userProfileRepository.createUserProfile({
+          uid: result.user.uid,
+          email: result.user.email ?? '',
+          name: fullName ?? '',
+        });
+      } catch {
+        // Si falla la creación del perfil, no bloqueamos el registro del
+        // usuario — la cuenta de autenticación ya se creó correctamente.
+      }
+
       return {
         id: result.user.uid,
         email: result.user.email ?? '',

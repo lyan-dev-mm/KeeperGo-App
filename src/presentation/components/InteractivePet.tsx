@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Animated, TouchableWithoutFeedback, View, StyleSheet } from 'react-native';
+import { Animated, TouchableWithoutFeedback, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PetAnimationType } from '../../domain/entities/mascota/PetEvent';
 
@@ -7,13 +7,24 @@ export interface InteractivePetHandle {
   play: (animation: PetAnimationType) => void;
 }
 
+export type PetStage = 'huevo' | 'polilla';
+
 interface InteractivePetProps {
   onTap: () => void;
   size?: number;
+  stage?: PetStage;
 }
 
+// Placeholder con emoji mientras no haya ilustraciones reales del diseñador.
+// Cuando existan, se reemplaza este mapa por rutas de imagen (require(...) o URL)
+// y el <Text> de abajo por un <Image>, sin tocar el resto del componente.
+const STAGE_EMOJI: Record<PetStage, string> = {
+  huevo: '🥚',
+  polilla: '🦋',
+};
+
 export const InteractivePet = forwardRef<InteractivePetHandle, InteractivePetProps>(
-  ({ onTap, size = 80 }, ref) => {
+  ({ onTap, size = 80, stage = 'huevo' }, ref) => {
     const scale = useRef(new Animated.Value(1)).current;
     const translateY = useRef(new Animated.Value(0)).current;
     const rotate = useRef(new Animated.Value(0)).current;
@@ -151,7 +162,7 @@ export const InteractivePet = forwardRef<InteractivePetHandle, InteractivePetPro
               transform: [{ translateY }, { scale }, { rotate: rotateInterpolated }],
             }}
           >
-            <Ionicons name="paw" size={size} color="#4CAF50" />
+            <Text style={{ fontSize: size }}>{STAGE_EMOJI[stage]}</Text>
           </Animated.View>
         </View>
       </TouchableWithoutFeedback>

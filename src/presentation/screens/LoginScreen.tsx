@@ -8,12 +8,12 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { Validators } from '../../utils/validators';
-import { Texts } from '../../../constants/Texts';
 import { Colors } from '../../../constants/Colors';
 
 export default function LoginScreen() {
@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -40,9 +41,14 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.appName}>{Texts.appName}</Text>
-      <Text style={styles.welcome}>{Texts.welcome}</Text>
+    <ScrollView contentContainerStyle={styles.container} style={styles.scrollBackground}>
+      <Image
+        source={require('../../../assets/images/LogoKepperGo.jpeg')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+
+      <Text style={styles.welcome}>Bienvenido</Text>
 
       <TextInput
         style={styles.input}
@@ -54,13 +60,22 @@ export default function LoginScreen() {
       />
       {emailError && <Text style={styles.error}>{emailError}</Text>}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Contraseña"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color="#9E9E9E"
+          />
+        </TouchableOpacity>
+      </View>
       {passwordError && <Text style={styles.error}>{passwordError}</Text>}
 
       <TouchableOpacity style={styles.checkboxRow} onPress={() => setRememberMe(!rememberMe)}>
@@ -69,14 +84,14 @@ export default function LoginScreen() {
           size={22}
           color={Colors.primary}
         />
-        <Text style={styles.checkboxLabel}>{Texts.rememberMe}</Text>
+        <Text style={styles.checkboxLabel}>Recordarme</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={isLoading}>
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>{Texts.login}</Text>
+          <Text style={styles.buttonText}>Iniciar Sesión</Text>
         )}
       </TouchableOpacity>
 
@@ -92,9 +107,9 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.footerRow}>
-        <Text>{Texts.noAccount}</Text>
+        <Text>¿No tienes cuenta? </Text>
         <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-          <Text style={styles.link}>{Texts.register}</Text>
+          <Text style={styles.link}>Regístrate</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -102,11 +117,22 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollBackground: { backgroundColor: '#fff' },
   container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 30, paddingVertical: 40 },
-  appName: { fontSize: 28, fontWeight: 'bold', textAlign: 'center' },
-  welcome: { fontSize: 20, textAlign: 'center', marginTop: 40, marginBottom: 20 },
+  logo: { width: 300, height: 300, alignSelf: 'center', marginBottom: 0 },
+  welcome: { fontSize: 20, textAlign: 'center', marginTop: 10, marginBottom: 20 },
   input: { borderWidth: 1, borderColor: '#CCC', borderRadius: 8, padding: 12, marginBottom: 8 },
   error: { color: Colors.error, fontSize: 12, marginBottom: 8 },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  passwordInput: { flex: 1, padding: 12 },
+  eyeButton: { paddingHorizontal: 12 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
   checkboxLabel: { marginLeft: 8 },
   button: {

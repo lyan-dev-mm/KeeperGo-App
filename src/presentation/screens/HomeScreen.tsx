@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components/Card';
 import { SideDrawer, DrawerMenuItem } from '../components/SideDrawer';
 import { useAuth } from '../hooks/useAuth';
+import { isAdminEmail } from '../../utils/adminUtils';
 
 function showComingSoon() {
   Alert.alert('Próximamente', 'Estamos trabajando en esto, pronto estará disponible.');
@@ -26,6 +27,9 @@ export default function HomeScreen() {
     { label: 'Técnicas de Estudio', onPress: showComingSoon },
     { label: 'Ver planes', onPress: showComingSoon },
     { label: 'Configuraciones', onPress: showComingSoon },
+    ...(isAdminEmail(user?.email)
+      ? [{ label: 'Panel de administración', onPress: () => router.push('/admin') }]
+      : []),
     {
       label: 'Cerrar sesión',
       onPress: async () => {
@@ -46,6 +50,7 @@ export default function HomeScreen() {
 
         <Text style={styles.greeting}>Hola, {firstName}!</Text>
         <Text style={styles.subGreeting}>describe tu día a Kii</Text>
+
         <View style={{ height: 30 }} />
 
         <Card
@@ -76,24 +81,6 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => {}}>
-          <Ionicons name="home" size={26} color="#4CAF50" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="heart-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="add-circle-outline" size={30} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/racha')}>
-          <Ionicons name="paw-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="person-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-      </View>
-
       <SideDrawer
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
@@ -106,7 +93,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#fff' },
-  container: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
+  container: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30 },
   header: { flexDirection: 'row', justifyContent: 'flex-start', marginBottom: 30 },
   greeting: { fontSize: 28, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)' },
   subGreeting: { fontSize: 16, color: '#9E9E9E', marginTop: 4 },
@@ -114,13 +101,4 @@ const styles = StyleSheet.create({
   motivationTitle: { fontSize: 16, fontWeight: '500', color: 'rgba(0,0,0,0.87)', marginTop: 10 },
   motivationSubtitle: { fontSize: 14, color: '#9E9E9E' },
   motivationBold: { fontSize: 14, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)', marginTop: 8 },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#EEE',
-    backgroundColor: '#fff',
-  },
 });
