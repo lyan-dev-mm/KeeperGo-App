@@ -1,16 +1,13 @@
-// src/data/repositories/RegistroAnimoRepositoryImpl.ts
-
 import { IRegistroRepository } from '../../domain/interfaces/IRegistroRepository';
 import { RegistroAnimo } from '../../domain/entities/bitacora/RegistroAnimo';
-import { SecureStorageService } from '../../infrastructure/storage/secureStorage';
+import SecureStorage from '../../services/secureStorage.js';
 
 const STORAGE_KEY = 'keepergo_bitacora_registros';
 
-// 📝 Tipo para los datos guardados en storage (con strings)
 interface StoredRegistro {
   id: string;
   userId: string;
-  fecha: string;        // ← string (porque viene de JSON)
+  fecha: string;        
   emocion: string;
   emocionLabel?: string;
   color?: string;
@@ -19,8 +16,8 @@ interface StoredRegistro {
   nota?: string;
   sintomas?: string[];
   actividades?: string[];
-  createdAt?: string;   // ← string
-  updatedAt?: string;   // ← string
+  createdAt?: string;   
+  updatedAt?: string;   
   reflection?: string;
   latitud?: number;
   longitud?: number;
@@ -58,7 +55,7 @@ const mapRegistroToStored = (registro: RegistroAnimo): StoredRegistro => {
  * Guarda los datos en SecureStorage (local)
  */
 export class RegistroAnimoRepositoryImpl implements IRegistroRepository {
-  private storage = SecureStorageService;
+  private storage = SecureStorage;
 
   /**
    * Obtiene los registros de un usuario

@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/EmotionDetailHeader.jsx
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';

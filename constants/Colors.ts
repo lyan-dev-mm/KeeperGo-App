@@ -1,4 +1,3 @@
-// constants/colors.js
 
 export const COLORS = {
   // Colores primarios
@@ -8,12 +7,17 @@ export const COLORS = {
   secondaryDark: '#A0ED85',
   background: '#F5F0E8',
   title_black: '#514343',
-
   error: '#F44336',
   success: '#4CAF50',
   white: '#FFFFFF',
   black87: 'rgba(0,0,0,0.87)',
-  grey: '#9E9E9E',
+
+  cian: '#5073FF', 
+  blue_dark: '#5073FF', 
+  blue: '#5BB6FF',
+  blue_second: '#90CAF9', 
+  blue_sec_dark: '#CAE7FF',
+
 
   // Colores de emociones
   emotions: {
@@ -101,5 +105,6 @@ export const Colors = {
   success: COLORS.success,
   white: COLORS.white,
   black87: COLORS.black87,
-  grey: COLORS.grey,
+  grey: COLORS.gray,
 };
+

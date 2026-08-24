@@ -1,11 +1,10 @@
-// src/presentation/components/bitacora/PanelBienestar.jsx
 
 import React, { useState, useRef, JSX } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   FlatList,
   Dimensions,
   NativeScrollEvent,
@@ -13,14 +12,11 @@ import {
 } from 'react-native';
 import { COLORS } from '../../../../constants/colors';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.78;
-const CARD_MARGIN = 12;
-const ITEM_WIDTH = CARD_WIDTH + CARD_MARGIN * 2;
+export type NivelAlerta = 'bajo' | 'medio' | 'alto';
 
 export interface AlertaBienestar {
   tipo: string;
-  nivel: 'bajo' | 'medio' | 'alto';
+  nivel: NivelAlerta;
   mensaje: string;
   sugerencia: string;
   timestamp: string;
@@ -33,9 +29,10 @@ export interface PanelBienestarProps {
   resumen?: string;
 }
 
-// ============================================
-// COMPONENTE
-// ============================================
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = width * 0.78;
+const CARD_MARGIN = 12;
+const ITEM_WIDTH = CARD_WIDTH + CARD_MARGIN * 2;
 
 export default function PanelBienestar({
   alertas,
@@ -49,10 +46,6 @@ export default function PanelBienestar({
   if (!alertas || alertas.length === 0) {
     return null;
   }
-
-  // ============================================
-  // FUNCIONES DE UTILIDAD
-  // ============================================
 
   const niveles = alertas.map((a) => a.nivel);
   const tieneAlta = niveles.includes('alto');
@@ -70,7 +63,7 @@ export default function PanelBienestar({
     return 'tranquilo';
   };
 
-  const getColorByLevel = (nivel: AlertaBienestar['nivel']): string => {
+  const getColorByLevel = (nivel: NivelAlerta): string => {
     switch (nivel) {
       case 'bajo':
         return '#A0ED85';
@@ -83,7 +76,7 @@ export default function PanelBienestar({
     }
   };
 
-  const getNivelTexto = (nivel: AlertaBienestar['nivel']): string => {
+  const getNivelTexto = (nivel: NivelAlerta): string => {
     switch (nivel) {
       case 'bajo':
         return 'Seguimiento';
@@ -95,10 +88,6 @@ export default function PanelBienestar({
         return 'Información';
     }
   };
-
-  // ============================================
-  // FUNCIONES DE SCROLL
-  // ============================================
 
   const scrollToIndex = (index: number): void => {
     if (!flatListRef.current) return;
@@ -138,10 +127,6 @@ export default function PanelBienestar({
     }
   };
 
-  // ============================================
-  // RENDERIZADO DE TARJETAS
-  // ============================================
-
   const renderAlertaCard = ({
     item,
     index,
@@ -174,10 +159,6 @@ export default function PanelBienestar({
     );
   };
 
-  // ============================================
-  // RENDERIZADO DE INDICADORES
-  // ============================================
-
   const renderProgressIndicator = (): JSX.Element => (
     <View style={styles.progressContainer}>
       {alertas.map((_, index) => (
@@ -191,10 +172,6 @@ export default function PanelBienestar({
       ))}
     </View>
   );
-
-  // ============================================
-  // RENDERIZADO PRINCIPAL
-  // ============================================
 
   return (
     <View style={styles.container}>
@@ -254,11 +231,19 @@ export default function PanelBienestar({
           <View style={styles.actionsContainer}>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonPrimary]}
+              onPress={() => {
+                // TODO: Navegar a zona de relajación
+                console.log('Navegar a zona de relajación');
+              }}
             >
               <Text style={styles.actionButtonText}>Zona de relajación</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSecondary]}
+              onPress={() => {
+                // TODO: Navegar a chat con Kii
+                console.log('Navegar a hablar con Kii');
+              }}
             >
               <Text style={styles.actionButtonTextSecondary}>Hablar con Kii</Text>
             </TouchableOpacity>

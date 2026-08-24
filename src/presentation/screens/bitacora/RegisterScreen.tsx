@@ -1,6 +1,6 @@
 // src/presentation/screens/bitacora/RegisterScreen.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect, JSX } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   View,
@@ -16,68 +16,75 @@ import {
 
 // Componentes
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, EMOCIONES } from '../../../../constants/colors';
-import EmotionWheel from '../../components/EmotionWheel';
-import IntensitySlider from '../../components/IntensitySlider'; 
+import { COLORS, EMOCIONES} from '../../../../constants/colors';
+import EmotionWheel from '../../components/bitacora/EmotionWheel';
+import IntensitySlider from '../../components/bitacora/IntensitySlider'; 
 import ConfirmationPanel from '../../components/bitacora/ConfirmationPanel'; 
 import ReflectionForm from '../../components/bitacora/ReflectionForm'; 
-
+import { EmotionData } from '../../components/bitacora/ConfirmationPanel';
 // Hooks
 import { useBitacora } from '../../hooks/useBitacora';
+import { useBitacoraStore } from '../../store/bitacoraStore';
 
-export default function RegisterScreen() {
+interface EmotionType {
+  id: string;
+  label: string;
+  color: string;
+  image: any;
+  emoji: string;
+}
+
+export default function RegisterScreen(): JSX.Element {
   // Obtener parámetros de navegación
   const router = useRouter();
   const params = useLocalSearchParams();
+  
 
-  //const { fecha, registro: registroExistente, onRegisterComplete } = route?.params || {};
-  // obtener parámetros
-  const { fecha, registro } = params;
-  // convertir fecha 
-  const fechaDate = fecha ? new Date(fecha) : new Date();
-  //const registroExistenteObj = registroExistente ? JSON.parse(registroExistente) : null;
-  // convertir registro si existe
-  const registroExistente = registro ? JSON.parse(registro) : null;
+  const fecha = params.fecha as string | undefined;
+  const registroParam = params.registro as string | undefined;
+  const fechaDate: Date = fecha ? new Date(fecha) : new Date();
+  const registroExistente = registroParam ? JSON.parse(registroParam) : null;
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  // ========== ESTADOS ==========
-  const [step, setStep] = useState('emotion'); // 'emotion' | 'energy' | 'reflection'
-  const [selectedEmotion, setSelectedEmotion] = useState(null);
-  const [selectedEnergy, setSelectedEnergy] = useState(null);
-  const [note, setNote] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [step, setStep] = useState<'emotion' | 'energy' | 'reflection'>('emotion');
+  const [selectedEmotion, setSelectedEmotion] = useState<EmotionData | null>(null);
+  const [selectedEnergy, setSelectedEnergy] = useState<number>(5);
+  const [note, setNote] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
 
-  // ========== HOOK ==========
-  const { saveRegistro } = useBitacora();
+  const hasLoaded = useRef(false);
 
-  // ========== CARGAR DATOS PARA EDICIÓN ==========
+  const { saveRegistro } = useBitacoraStore();
+
   useEffect(() => {
-    if (registroExistente) {
-      const emotion = EMOCIONES.find(e => e.id === registroExistente.emocion);
+    if (registroExistente && !hasLoaded.current) {
+      const emotion = EMOCIONES.find((e: EmotionData) => e.id === registroExistente.emocion);
       if (emotion) {
         setSelectedEmotion(emotion);
-        setSelectedEnergy(registroExistente.energia);
+        setSelectedEnergy(registroExistente.energia || 5);
         setNote(registroExistente.nota || '');
         setStep('energy');
+        hasLoaded.current = true;
       }
     }
   }, [registroExistente]);
 
-  // ========== HANDLERS ==========
-
   
-  const handleSelectEmotion = (emotion) => {
+  const handleSelectEmotion = (emotion: EmotionData): void => {
     setSelectedEmotion(emotion);
     setTimeout(() => {
       setStep('energy');
     }, 800);
   };
 
-  const handleSelectEnergy = (value) => {
-    setSelectedEnergy(value);
+  const handleSelectEnergy = (value: number): void => {
+    const safeValue = typeof value === 'number' && !isNaN(value) ? value : 5;
+    console.log(' Energía seleccionada:', safeValue);
+    setSelectedEnergy(safeValue); 
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = (): void => {
     if (!selectedEmotion || !selectedEnergy) {
       Alert.alert('', 'Por favor selecciona una emoción y nivel de energía');
       return;
@@ -85,23 +92,22 @@ export default function RegisterScreen() {
     setShowConfirmation(true);
   };
 
-  const handleReflect = () => {
+  const handleReflect = (): void => {
     setShowConfirmation(false);
     setStep('reflection');
   };
 
-  const handleSkipReflection = () => {
+  const handleSkipReflection = (): void => {
     setShowConfirmation(false);
     handleSave();
   };
 
-  const handleSaveReflection = (reflectionText) => {
+  const handleSaveReflection = (reflectionText: string): void => {
     setNote(reflectionText);
     handleSave(reflectionText);
   };
 
-  const handleSave = async (reflectionText = null) => {
-    
+  const handleSave = async (reflectionText: string | null = null): Promise<void> => {
     if (!selectedEmotion || !selectedEnergy) {
       Alert.alert('⚠️', 'Por favor selecciona una emoción y nivel de energía');
       return;
@@ -119,7 +125,7 @@ export default function RegisterScreen() {
       energia: selectedEnergy,
       energiaLabel: selectedEnergy >= 7 ? 'Alta' : selectedEnergy >= 4 ? 'Media' : 'Baja',
       nota: note.trim() || (reflectionText ? reflectionText.trim() : ''),
-      fecha: selectedDate,
+      fecha: fechaDate,//selectedDate,
       //id: registroExistente?.id,
     };
 
@@ -134,14 +140,7 @@ export default function RegisterScreen() {
           {
             text: 'Volver',
             onPress: () => {
-              router.back();
-              /*if (onRegisterComplete) {
-                console.log('Llamada a onRegisterComplete', registroData);
-                onRegisterComplete(registroData);
-              } else {
-                console.log(' onRegisterComplete es undefined');
-              }
-               navigation.goBack();*/
+              router.replace('/(tabs)/bitacora');
             },
           },
           {
@@ -161,9 +160,9 @@ export default function RegisterScreen() {
     }
   };
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setSelectedEmotion(null);
-    setSelectedEnergy(null);
+    setSelectedEnergy(5);
     setNote('');
     setStep('emotion');
     setShowConfirmation(false);
@@ -171,7 +170,7 @@ export default function RegisterScreen() {
 
   // ========== RENDER POR PASO ==========
 
-  const renderEmotionStep = () => (
+  const renderEmotionStep = (): JSX.Element => (
     <View style={styles.stepContainer}>      
       <Text style={styles.dateText}>
         {fechaDate.toLocaleDateString('es-MX', { 
@@ -206,11 +205,10 @@ export default function RegisterScreen() {
       <Text style={styles.energySubtext}>(Del 1 al 10, donde 1 es bajo y 10 es alto)</Text>
 
       <IntensitySlider
-        value={selectedEnergy || 5}
+        value={selectedEnergy} 
         onValueChange={handleSelectEnergy}
         min={1}
         max={10}
-        step={1}
       />
 
       <TouchableOpacity
@@ -237,7 +235,7 @@ export default function RegisterScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => router.back()} 
+          onPress={() => router.replace('/(tabs)/bitacora')} 
           style={styles.backButton}
           activeOpacity={0.7}
         >
@@ -325,12 +323,6 @@ const styles = StyleSheet.create({
    headerPlaceholder: {
     width: 44, 
   },
-
-  // ===== BOTÓN DE VOLVER =====
-  backButton: {
-    marginBottom: 8,
-    paddingVertical: 4,
-  },
   backButtonText: {
     fontSize: 16,
     color: COLORS.primaryDark,
@@ -393,7 +385,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray[500],
     textAlign: 'left',
-    marginBottom: 55,
+    marginBottom: 50,
   },
   selectedEmotionText: {
     fontSize: 18,
@@ -404,36 +396,6 @@ const styles = StyleSheet.create({
   emotionLabel: {
     fontWeight: 'bold',
     fontSize: 20,
-  },
-  energyContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  energyButton: {
-    backgroundColor: COLORS.white,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.gray[200],
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  energyButtonActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#F5F3FF',
-  },
-  energyLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[700],
-  },
-  energyValue: {
-    fontSize: 14,
-    color: COLORS.gray[500],
-    marginTop: 2,
   },
   noteInput: {
     backgroundColor: COLORS.white,
@@ -485,21 +447,21 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // ===== ESTILOS PARA LA PANTALLA DE ENERGÍA =====
+  // PANTALLA DE ENERGÍA 
   selectedEmotionDisplay: {
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 20,
   },
   selectedEmotionImage: {
-    width: 80,
-    height: 80,
+    width: 130,
+    height: 130,
     borderRadius: 40,
   },
   selectedEmotionLabel: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 8,
+    marginTop: 10,
   },
   energyQuestion: {
     fontSize: 18,
@@ -570,7 +532,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 100,
   },
   continueButtonDisabled: {
     backgroundColor: COLORS.gray[300],

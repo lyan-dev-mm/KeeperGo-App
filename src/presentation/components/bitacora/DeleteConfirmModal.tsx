@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/DeleteConfirmModal.jsx
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';

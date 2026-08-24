@@ -1,4 +1,4 @@
-// src/presentation/components/IntensitySlider.jsx
+// src/presentation/components/bitacora/IntensitySlider.tsx
 
 import React, { useState, useRef, useEffect, JSX } from 'react';
 import {
@@ -9,7 +9,6 @@ import {
   Animated,
   TouchableOpacity,
   Dimensions,
-  PanResponderInstance,
   GestureResponderEvent,
   PanResponderGestureState,
 } from 'react-native';
@@ -22,58 +21,47 @@ export interface IntensitySliderProps {
   onValueChange?: (value: number) => void;
   min?: number;
   max?: number;
-  step?: number;
 }
 
-/**
- * Componente de slider con colores de energía
- * Diseño suave y no invasivo desde la perspectiva de psicología del usuario
- */
-export default function IntensitySlider({ 
-  value = 1, 
-  onValueChange, 
-  min = 1, 
+export default function IntensitySlider({
+  value = 5,
+  onValueChange,
+  min = 1,
   max = 10,
-  step = 1,
 }: IntensitySliderProps): JSX.Element {
-  const [sliderValue, setSliderValue] = useState<number>(Math.max(value, min));
+  const [sliderValue, setSliderValue] = useState<number>(value);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const pan = useRef<Animated.Value>(new Animated.Value(0)).current;
   const containerWidth = useRef<number>(0);
   const thumbPosition = useRef<number>(0);
 
-  // Obtener color según el valor
   const getEnergyColor = (val: number): string => {
     if (val <= 4) return ENERGY_COLORS.low;
     if (val <= 7) return ENERGY_COLORS.medium;
     return ENERGY_COLORS.high;
   };
 
-  // Mapear valor a posición (0-1)
   const getPositionFromValue = (val: number): number => {
     return (val - min) / (max - min);
   };
 
-  // Mapear posición a valor
   const getValueFromPosition = (position: number): number => {
-    const rawValue = position * (max - min) + min;
-    const steppedValue = Math.round(rawValue / step) * step;
-    return Math.max(min, Math.min(max, steppedValue));
+    if (isNaN(position) || !isFinite(position) || position < 0 || position > 1) {
+      return min;
+    }
+    return Math.round(position * (max - min) + min);
   };
 
-  // Actualizar posición del pulgar cuando cambia el valor externo
-   useEffect(() => {
+  useEffect(() => {
     if (!isDragging && value !== sliderValue) {
-      const newValue = Math.max(value, min);
-      setSliderValue(newValue);
-      const position = getPositionFromValue(newValue);
+      setSliderValue(value);
+      const position = getPositionFromValue(value);
       const newX = position * containerWidth.current;
       pan.setValue(newX);
       thumbPosition.current = newX;
     }
   }, [value]);
 
-  // ========== PAN RESPONDER ==========
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -96,32 +84,13 @@ export default function IntensitySlider({
         }
       },
       onPanResponderRelease: () => {
-        thumbPosition.current = (pan as any).__getValue();
+        thumbPosition.current = (pan as any)._value;
         setIsDragging(false);
       },
     })
   ).current;
 
-  // ========== TOCAR EN LA BARRA ==========
-  const handlePressBar = (event: GestureResponderEvent): void => {
-    if (containerWidth.current === 0) return;
-    
-    const { locationX } = event.nativeEvent;
-    const newPosition = Math.max(0, Math.min(1, locationX / containerWidth.current));
-    const newValue = getValueFromPosition(newPosition);
-    const newX = newPosition * containerWidth.current;
-    
-    setSliderValue(newValue);
-    pan.setValue(newX);
-    thumbPosition.current = newX;
-    
-    if (onValueChange) {
-      onValueChange(newValue);
-    }
-  };
-
-  // ========== RENDER DE MARCAS ==========
-  const renderMarks = () => {
+  const renderMarks = (): JSX.Element[] => {
     const marks: JSX.Element[] = [];
     for (let i = min; i <= max; i++) {
       const position = getPositionFromValue(i);
@@ -140,9 +109,7 @@ export default function IntensitySlider({
     return marks;
   };
 
-  // ========== RENDER DE LA BARRA DE COLOR ==========
   const renderColorBar = (): JSX.Element => {
-    // Crear un degradado simple con tres colores
     const segments = [
       { color: ENERGY_COLORS.low, position: 0.33 },
       { color: ENERGY_COLORS.medium, position: 0.66 },
@@ -171,7 +138,6 @@ export default function IntensitySlider({
             />
           );
         })}
-        {/*  Barra de progreso que se superpone */}
         <Animated.View
           style={[
             styles.progressOverlay,
@@ -190,14 +156,11 @@ export default function IntensitySlider({
 
   return (
     <View style={styles.container}>
-
-      {/* Barra del slider */}
       <View
         style={styles.sliderContainer}
         onLayout={(event) => {
           containerWidth.current = event.nativeEvent.layout.width;
-          // Inicializar posición del pulgar
-          const initialValue = Math.max(value, min);
+          const initialValue = value;
           const initialPosition = getPositionFromValue(initialValue);
           const initialX = initialPosition * containerWidth.current;
           pan.setValue(initialX);
@@ -205,16 +168,13 @@ export default function IntensitySlider({
           setSliderValue(initialValue);
         }}
       >
-        {/* Barra con colores */}
         <View style={styles.sliderTrack}>
           {renderColorBar()}
           {renderMarks()}
         </View>
 
-        {/* Área táctil */}
         <TouchableOpacity
           style={styles.touchArea}
-          onPress={handlePressBar}
           activeOpacity={1}
         >
           <View {...panResponder.panHandlers} style={styles.thumbContainer}>
@@ -243,15 +203,13 @@ export default function IntensitySlider({
         </TouchableOpacity>
       </View>
 
-      {/* Labels de los extremos */}
-        <View style={styles.labelsContainer}>
-            <Text style={styles.label}>{min}</Text>
-            <Text style={[styles.label, styles.labelCenter]}>
-              {Math.round((min + max) / 2)}
-            </Text>
-            <Text style={styles.label}>{max}</Text>
+      <View style={styles.labelsContainer}>
+        <Text style={styles.label}>{min}</Text>
+        <Text style={[styles.label, styles.labelCenter]}>
+          {Math.round((min + max) / 2)}
+        </Text>
+        <Text style={styles.label}>{max}</Text>
       </View>
-      
     </View>
   );
 }
@@ -266,7 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 4,
-    marginBottom: 8, //8
+    marginBottom: 8,
   },
   label: {
     fontSize: 13,
@@ -346,7 +304,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
-    marginLeft: -22, // Centrar el pulgar en la posición exacta
+    marginLeft: -22,
   },
   thumbActive: {
     borderWidth: 3,

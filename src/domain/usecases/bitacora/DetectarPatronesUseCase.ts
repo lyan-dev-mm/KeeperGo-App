@@ -1,12 +1,9 @@
-// src/domain/usecases/bitacora/DetectarPatronesUseCase.ts
 
 import { RegistroAnimo } from '../../entities/bitacora/RegistroAnimo';
 import { IRegistroRepository } from '../../interfaces/IRegistroRepository';
-import { PrevencionSesgos } from '../../../utils/bitacora/PrevencionSesgos';
+import { PrevencionSesgos } from '../../../domain/utils/PrevencionSesgos';
 
-// ============================================
 //  DTOs (Data Transfer Objects) específicos de este Use Case
-// ============================================
 
 export interface AnalisisEmociones {
   feliz: number;
@@ -60,10 +57,6 @@ export interface AnalisisCompleto {
   recomendaciones: Recomendacion[];
   tieneAlertas: boolean;
 }
-
-// ============================================
-// USE CASE
-// ============================================
 
 /**
  * Caso de uso: Detectar patrones emocionales
@@ -127,10 +120,6 @@ export class DetectarPatronesUseCase {
       tieneAlertas: alertasFinales.length > 0,
     };
   }
-
-  // ============================================
-  // MÉTODOS PRIVADOS DE ANÁLISIS
-  // ============================================
 
   private analizarEmociones(historial: RegistroAnimo[]): AnalisisEmociones {
     const conteo: AnalisisEmociones = {
@@ -230,10 +219,6 @@ export class DetectarPatronesUseCase {
     return { cambios, positiva: positivasSegunda - positivasPrimera };
   }
 
-  // ============================================
-  // EVALUACIÓN DE ALERTAS
-  // ============================================
-
   private evaluarConContexto(
     analisis: {
       emociones: AnalisisEmociones;
@@ -331,10 +316,6 @@ export class DetectarPatronesUseCase {
 
     return alertas;
   }
-
-  // ============================================
-  // GENERACIÓN DE RESPUESTAS
-  // ============================================
 
   private generarResumenEmpatico(
     alertas: Alerta[],

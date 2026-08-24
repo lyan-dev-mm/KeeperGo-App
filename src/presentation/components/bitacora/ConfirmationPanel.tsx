@@ -1,4 +1,3 @@
-// src/presentation/components/ConfirmationPanel.jsx
 
 import React from 'react';
 import {
@@ -46,7 +45,7 @@ export default function ConfirmationPanel({
         <View style={styles.iconContainer}>
           <View style={styles.halfCircleBackground}>
             <Image 
-          source={require('../../../assets/images/kii-pensanding.png')} 
+          source={require('../../../../assets/images/kii-pensanding.png')} 
           style={styles.iconImage}
           resizeMode="contain"
         />

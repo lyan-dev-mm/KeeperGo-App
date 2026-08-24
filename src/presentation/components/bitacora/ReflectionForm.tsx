@@ -1,4 +1,3 @@
-// src/presentation/components/ReflectionForm.jsx
 
 import React, { useState, useEffect, JSX } from 'react';
 import {
@@ -39,10 +38,6 @@ export interface ReflectionFormProps {
   onBack: () => void;
 }
 
-// ============================================
-// COMPONENTE
-// ============================================
-
 /**
  * Formulario de reflexión en pantalla completa
  * Reutiliza el slider de energía para el nivel de intensidad
@@ -54,9 +49,6 @@ export default function ReflectionForm({
   onSave,
   onBack,
 }: ReflectionFormProps): JSX.Element {
-  // ============================================
-  // ESTADO
-  // ============================================
 
   const [answers, setAnswers] = useState<ReflectionAnswers>({
     queSucedio: '',
@@ -66,10 +58,6 @@ export default function ReflectionForm({
   });
 
   const [currentStep, setCurrentStep] = useState<number>(0);
-
-  // ============================================
-  // PREGUNTAS
-  // ============================================
 
   const questions: Question[] = [
     {
@@ -99,10 +87,6 @@ export default function ReflectionForm({
   const progress = ((currentStep + 1) / questions.length) * 100;
   const isLastQuestion = currentStep === questions.length - 1;
 
-  // ============================================
-  // BOTÓN "ATRÁS" NATIVO (Android)
-  // ============================================
-
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (currentStep > 0) {
@@ -115,10 +99,6 @@ export default function ReflectionForm({
 
     return () => backHandler.remove();
   }, [currentStep]);
-
-  // ============================================
-  // HANDLERS
-  // ============================================
 
   const handleAnswerChange = (id: keyof ReflectionAnswers, text: string): void => {
     setAnswers((prev) => ({ ...prev, [id]: text }));
@@ -152,10 +132,6 @@ export default function ReflectionForm({
       comoMeSiento: `Nivel ${value} de 10`,
     }));
   };
-
-  // ============================================
-  // RENDER
-  // ============================================
 
   return (
     <View style={styles.container}>
@@ -246,7 +222,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingTop: 8,
   },
-  // ===== HEADER =====
   header: {
     //alignItems: 'center',
     paddingBottom: 16,
@@ -264,7 +239,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 18,
   },
-  // ===== PROGRESO =====
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,7 +261,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.gray[500],
   },
-  // ===== PREGUNTA =====
   questionContainer: {
     flex: 1,
   },
@@ -312,7 +285,6 @@ const styles = StyleSheet.create({
     minHeight: 140,
     textAlignVertical: 'top',
   },
-  // ===== SLIDER =====
   sliderContainer: {
     marginTop: 8,
     paddingVertical: 16,
@@ -335,7 +307,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  // ===== BOTONES =====
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

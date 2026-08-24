@@ -1,10 +1,6 @@
-// src/domain/usecases/bitacora/DeleteRegistroUseCase.ts
 
 import { RegistroAnimo } from '../../../domain/entities/bitacora/RegistroAnimo';
 
-// ============================================
-// INTERFAZ DEL REPOSITORIO
-// ============================================
 interface IRegistroAnimoRepository {
   getRegistroById(id: string): Promise<RegistroAnimo | null>;
   deleteRegistro(id: string): Promise<boolean>;

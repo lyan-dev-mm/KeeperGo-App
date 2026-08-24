@@ -1,5 +1,3 @@
-// src/domain/usecases/bitacora/GetRegistrosUseCase.ts
-
 import { RegistroAnimo } from '../../entities/bitacora/RegistroAnimo';
 import { IRegistroRepository } from '../../interfaces/IRegistroRepository';
 

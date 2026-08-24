@@ -1,15 +1,18 @@
-// src/infrastructure/storage/SecureStorage.js
-
+// src/services/SecureStorage.js
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-/**
- * Servicio de almacenamiento seguro para datos sensibles
- * Usa expo-secure-store (Keychain en iOS, Keystore en Android)
- */
+const isWeb = Platform.OS === 'web';
+
 export const SecureStorage = {
   async setItem(key, value) {
     try {
       const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      if (isWeb) {
+        localStorage.setItem(key, stringValue);
+        console.log(` [SecureStorage] Guardado en localStorage: ${key}`);
+        return true;
+      }
       await SecureStore.setItemAsync(key, stringValue);
       console.log(` [SecureStorage] Guardado: ${key}`);
       return true;
@@ -21,6 +24,15 @@ export const SecureStorage = {
 
   async getItem(key) {
     try {
+      if (isWeb) {
+        const value = localStorage.getItem(key);
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
       const value = await SecureStore.getItemAsync(key);
       if (!value) return null;
       try {
@@ -36,6 +48,11 @@ export const SecureStorage = {
 
   async removeItem(key) {
     try {
+      if (isWeb) {
+        localStorage.removeItem(key);
+        console.log(` [SecureStorage] Eliminado de localStorage: ${key}`);
+        return true;
+      }
       await SecureStore.deleteItemAsync(key);
       console.log(` [SecureStorage] Eliminado: ${key}`);
       return true;
@@ -44,10 +61,8 @@ export const SecureStorage = {
       return false;
     }
   },
-
   async clearAll() {
     try {
-      // expo-secure-store no tiene clearAll, eliminamos las claves conocidas
       await this.removeItem('auth_token');
       await this.removeItem('user_data');
       await this.removeItem('session_start');
@@ -56,7 +71,7 @@ export const SecureStorage = {
       console.log(' [SecureStorage] Almacenamiento limpiado');
       return true;
     } catch (error) {
-      console.error('❌ [SecureStorage] Error limpiando:', error);
+      console.error('[SecureStorage] Error limpiando:', error);
       return false;
     }
   },

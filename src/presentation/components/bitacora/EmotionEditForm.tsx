@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/EmotionEditForm.jsx
 
 import React, { JSX } from 'react';
 import { 
@@ -83,7 +82,7 @@ export default function EmotionEditForm({
         style={styles.deleteButton} 
         onPress={onDelete}
       >
-      <Text style={styles.deleteButtonText}>🗑️ Eliminar registro</Text>
+      <Text style={styles.deleteButtonText}>Eliminar registro</Text>
       </TouchableOpacity>
       )}
     </View>

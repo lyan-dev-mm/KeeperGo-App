@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/AlertaPrevencion.jsx
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';

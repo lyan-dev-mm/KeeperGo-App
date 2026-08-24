@@ -1,4 +1,3 @@
-// src/domain/entities/RegistroAnimo.ts
 
 interface RegistroAnimoProps {
   id?: string;

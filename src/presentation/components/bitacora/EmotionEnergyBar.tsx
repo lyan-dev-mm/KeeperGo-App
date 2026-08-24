@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/EmotionEnergyBar.jsx
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';

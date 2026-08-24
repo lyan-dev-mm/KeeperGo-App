@@ -1,5 +1,3 @@
-// src/domain/interfaces/IRegistroRepository.ts
-
 import { RegistroAnimo } from '../entities/bitacora/RegistroAnimo';
 
 export interface IRegistroRepository {

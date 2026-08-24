@@ -21,8 +21,8 @@ export default function HomeScreen() {
   const menuItems: DrawerMenuItem[] = [
     { label: 'Perfil', onPress: showComingSoon },
     { label: 'Comunidad de hábitos', onPress: showComingSoon },
-    { label: 'Bitácora de emociones', onPress: showComingSoon },
-    { label: 'Zona de relajación', onPress: showComingSoon },
+    { label: 'Bitácora de emociones', onPress: () => router.push('/(tabs)/bitacora') },
+    { label: 'Zona de relajación', onPress: () => router.push('/zona-relajacion') },
     { label: 'Técnicas de Estudio', onPress: showComingSoon },
     { label: 'Ver planes', onPress: showComingSoon },
     { label: 'Configuraciones', onPress: showComingSoon },
@@ -45,7 +45,7 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.greeting}>Hola, {firstName}!</Text>
-        <Text style={styles.subGreeting}>describe tu día a Kii</Text>
+        <Text style={styles.subGreeting}>Describe tu día a Kii</Text>
         <View style={{ height: 30 }} />
 
         <Card
@@ -54,7 +54,7 @@ export default function HomeScreen() {
           buttonText="Iniciar respiración"
           iconName="leaf-outline"
           color="#4CAF50"
-          onPress={showComingSoon}
+          onPress={() => router.push('/zona-relajacion')}
         />
 
         <View style={{ height: 20 }} />
@@ -65,7 +65,7 @@ export default function HomeScreen() {
           buttonText="Registrar ánimo"
           iconName="happy-outline"
           color="#FF9800"
-          onPress={showComingSoon}
+          onPress={() => router.push('/bitacora')}
         />
 
         <View style={styles.motivation}>
@@ -80,7 +80,7 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={() => {}}>
           <Ionicons name="home" size={26} color="#4CAF50" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/bitacora')}>
           <Ionicons name="heart-outline" size={26} color="#9E9E9E" />
         </TouchableOpacity>
         <TouchableOpacity onPress={showComingSoon}>

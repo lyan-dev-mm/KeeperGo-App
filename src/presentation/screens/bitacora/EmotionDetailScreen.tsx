@@ -25,6 +25,7 @@ import EmotionNoteCard from '../../components/bitacora/EmotionNoteCard';
 import EmotionEditForm from '../../components/bitacora/EmotionEditForm';
 import DeleteConfirmModal from '../../components/bitacora/DeleteConfirmModal';
 import { EmotionItem } from '../../components/bitacora/EmotionWheel';
+import { useBitacoraStore } from '../../store/bitacoraStore';
 
 // ============================================
 // INTERFACES
@@ -92,7 +93,7 @@ export default function EmotionDetailScreen(): JSX.Element {
   const registroObj: RegistroData | null = registro ? JSON.parse(registro) : null;
   const fechaDate: Date = fecha ? new Date(fecha) : new Date();
 
-  const { deleteRegistro, saveRegistro } = useBitacora();
+  const { deleteRegistro, saveRegistro } = useBitacoraStore();
 
   // ============================================
   // ESTADO
@@ -162,7 +163,7 @@ export default function EmotionDetailScreen(): JSX.Element {
       return;
     }
 
-    // ✅ Crear objeto con el formato correcto para SaveRegistroData
+    // Crear objeto con el formato correcto para SaveRegistroData
     const updatedRegistro: SaveRegistroData = {
       id: registroObj.id,
       userId: registroObj.userId,
@@ -236,7 +237,7 @@ export default function EmotionDetailScreen(): JSX.Element {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-      {/* ✅ Header sin isEditing */}
+      {/* Header sin isEditing */}
       <EmotionDetailHeader
         title="Detalle"
         onBack={() => router.back()}
@@ -250,7 +251,7 @@ export default function EmotionDetailScreen(): JSX.Element {
         </View>
 
         {isEditing ? (
-          // ✅ Modo edición con adaptadores
+          //  Modo edición con adaptadores
           <EmotionEditForm
             selectedEmotion={adaptEmotionItemToEmotionData(selectedEmotion)}
             onSelectEmotion={(emotion: EmotionData) => {
@@ -265,7 +266,7 @@ export default function EmotionDetailScreen(): JSX.Element {
             onDelete={() => setShowDeleteConfirm(true)}
           />
         ) : (
-          // ✅ Modo visualización
+          //  Modo visualización
           <>
             <EmotionMedievalFrame
               emotionId={registroObj.emocion}

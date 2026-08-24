@@ -1,10 +1,6 @@
-// src/domain/entities/Emocion.ts
 
 import { EMOCIONES_DATA, COLORS } from '../../../../constants/colors';
 
-// ============================================
-// INTERFAZ PARA LOS DATOS DE EMOCIÓN
-// ============================================
 interface EmocionData {
   id: string;
   label: string;
@@ -99,10 +95,6 @@ export class Emocion {
       emoji: this.emoji,
     };
   }
-
-  // ============================================
-  // MÉTODOS ESTÁTICOS
-  // ============================================
 
   /**
    * Obtiene todas las emociones disponibles

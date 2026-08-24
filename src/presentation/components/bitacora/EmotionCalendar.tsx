@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/EmotionCalendar.jsx
 
 import React, { useState, useEffect, JSX } from 'react';
 import {
@@ -6,15 +5,25 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Image,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { COLORS } from '../../../../constants/colors'
 import { Emocion } from '../../../domain/entities/bitacora/Emocion';
 import { RegistroAnimo } from '../../../domain/entities/bitacora/RegistroAnimo'
 
-const { width } = Dimensions.get('window');
-const DAY_SIZE = width / 7 - 8;
+// Funciones auxiliares para calcular tamaños
+const getDaySize = (width: number) : number => {
+  if (Platform.OS === 'web') {
+    const availablewidth = width - 48;
+    const daySize = Math.floor(availablewidth / 7) - 4;
+    return Math.min(daySize, 60);
+  }
+  return Math.floor((width - 24) / 7) - 8;
+};
+
+const MIN_DAY_SIZE = 32;
 
 export interface DayData {
   id: string;
@@ -42,6 +51,8 @@ export default function EmotionCalendar({
 }: EmotionCalendarProps): JSX.Element {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [days, setDays] = useState<DayData[]>([]);
+  const { width } = useWindowDimensions();
+  const daySize = Math.max(getDaySize(width), MIN_DAY_SIZE);
 
   useEffect(() => {
     generateDays();
@@ -51,25 +62,15 @@ export default function EmotionCalendar({
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     
-    // ===== 1. Calcular el primer día del mes =====
     const firstDayOfMonth = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    
-    
-    // ===== 2. Día de la semana del primer día (0 = Domingo) =====
     let startDayOfWeek = firstDayOfMonth.getDay();
     
-    // ===== 3. Crear array de días (siempre 42 = 6 filas x 7 días) =====
-    const totalDays = 42;
-    const daysArray = [];
-    
-    // ===== 4. Días del mes anterior =====
+    const daysArray: DayData[] = [];
+
+    // Mes anterior 
     const prevMonthDate = new Date(year, month, 0);
     const prevMonthDays = prevMonthDate.getDate();
-    
-    // Si el mes empieza en Domingo (0), no hay días del mes anterior
-    // Si empieza en Lunes (1), hay 1 día del mes anterior, etc.
     const daysFromPrevMonth = startDayOfWeek === 0 ? 0 : startDayOfWeek;
     
     for (let i = daysFromPrevMonth - 1; i >= 0; i--) {
@@ -87,7 +88,7 @@ export default function EmotionCalendar({
       });
     }
     
-    // ===== 5. Días del mes actual =====
+    // Días del mes actual 
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
       const isTodayDate = isToday(date);
@@ -105,7 +106,9 @@ export default function EmotionCalendar({
       });
     }
     
-    // ===== 6. Días del mes siguiente (para completar 42) =====
+    // Días del mes siguiente
+    const totalDays = 42;
+
     const remainingDays = totalDays - daysArray.length;
     for (let i = 1; i <= remainingDays; i++) {
       const date = new Date(year, month + 1, i);
@@ -167,6 +170,79 @@ export default function EmotionCalendar({
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const dayNames = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
 
+  const renderDayRows = () => {
+    const rows = [];
+    for (let i = 0; i< days.length; i += 7) {
+      const rowDays = days.slice(i, i + 7); 
+        rows.push(
+          <View key={`row-${i}`} style={styles.dayRow}>
+            {rowDays.map((day, index) => renderDayCell(day, i + index))}
+          </View>
+        );
+      }
+    return rows;
+  }
+
+  const renderDayCell = (day: DayData, key: number) => {
+    const isSelected = day.date && isSelectedDate(day.date);
+    const emotionData = day.registro
+      ? Emocion.getById(day.registro.emocion)
+      : null;
+  
+  return (
+        <TouchableOpacity 
+        key={day.id || key}
+        style={[
+          styles.dayCell,
+          {width: daySize, height: daySize},
+          !day.isCurrentMonth && styles.otherMonthCell,
+          isSelected && styles.selectedCell,
+        ]}
+        onPress={() => {
+          if(day.date && day.isCurrentMonth){
+            onDayPress?.(day.date);
+          }
+        }}
+        disabled={!day.isCurrentMonth}
+        activeOpacity={0.6}
+        >
+         {day.registro && emotionData ? (
+          <TouchableOpacity 
+            style={styles.emotionDayContainer}
+            onPress={() => {
+              if (onEmotionPress && day.registro && day.date) {
+                onEmotionPress(day.registro, day.date);
+              }
+            }}
+            activeOpacity={0.7}
+          >
+         <Image 
+              source={emotionData.image}
+              style={[styles.emotionDayImage, { width: daySize * 0.65, height: daySize * 0.65 }]}
+              resizeMode="contain"
+            />
+            <Text style={[styles.emotionDayNumber, { fontSize: Math.max(8, daySize * 0.2) }]}>
+              {day.day}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={[
+            styles.dayText,
+            { fontSize: Math.max(12, daySize * 0.35) },
+            !day.isCurrentMonth && styles.otherMonthText,
+            day.isToday && styles.todayText,
+            isSelected && styles.selectedDayText,
+          ]}>
+            {day.day}
+          </Text>
+        )}
+        {day.isToday && !day.registro && (
+          <View style={styles.todayDot} />
+        )}
+      </TouchableOpacity>
+    );
+  };
+  
   return (
     <View style={styles.container}>
       {/* Header del mes */}
@@ -199,64 +275,7 @@ export default function EmotionCalendar({
 
       {/* Grid de días */}
       <View style={styles.daysGrid}>
-        {days.map((day, index) => {
-          const isSelected = day.date && isSelectedDate(day.date);
-          const emotionData = day.registro 
-            ? Emocion.getById(day.registro.emocion) 
-            : null;
-          return (
-            <TouchableOpacity
-              key={day.id || index}
-              style={[
-                styles.dayCell,
-                !day.isCurrentMonth && styles.otherMonthCell,
-                isSelected && styles.selectedCell,
-              ]}
-              onPress={() => {
-                if (day.date && day.isCurrentMonth) {
-                  onDayPress?.(day.date);
-                }
-              }}
-              disabled={!day.isCurrentMonth}
-              activeOpacity={0.6}
-            >
-             {day.registro && emotionData ? (
-              <TouchableOpacity style={styles.emotionDayContainer}
-              onPress={() => {
-                // Al tocar emocion abrir detalle
-                if(onEmotionPress && day.registro && day.date){
-                  onEmotionPress(day.registro, day.date);
-                }
-              }}
-              activeOpacity={0.7}
-              >
-                  <Image 
-                    source={emotionData.image}
-                    style={styles.emotionDayImage}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.emotionDayNumber}>
-                    {day.day}
-                  </Text>
-                </TouchableOpacity>
-              ) : ( 
-
-              // Días sin emoción
-              <Text style={[
-                styles.dayText,
-                !day.isCurrentMonth && styles.otherMonthText,
-                day.isToday && styles.todayText,
-                isSelected && styles.selectedDayText,
-              ]}>
-                {day.day}
-              </Text>
-             )}
-              {day.isToday && !day.registro && (
-                <View style={styles.todayDot} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
+        {renderDayRows()}
       </View>
     </View>
   );
@@ -334,13 +353,15 @@ const styles = StyleSheet.create({
   },
   // GRID de días
   daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     paddingTop: 4,
   },
+  dayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 4,
+  },
   dayCell: {
-    width: DAY_SIZE,
-    height: DAY_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -357,7 +378,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 14,
-    color: COLORS.black,
+    color: COLORS.gray[600],
     fontWeight: '400',
   },
   otherMonthText: {

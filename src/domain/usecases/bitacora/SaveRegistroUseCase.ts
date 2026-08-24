@@ -1,5 +1,3 @@
-// src/domain/usecases/bitacora/SaveRegistroUseCase.ts
-
 import { RegistroAnimo } from '../../entities/bitacora/RegistroAnimo';
 import { IRegistroRepository } from '../../interfaces/IRegistroRepository';
 
@@ -43,11 +41,7 @@ export class SaveRegistroUseCase {
    * @throws {Error} Si faltan datos obligatorios o son inválidos
    */
   async execute(registroData: SaveRegistroData): Promise<RegistroAnimo> {
-    console.log('📊 SaveRegistroUseCase - Datos recibidos:', registroData);
-
-    // ============================================
-    // 1. VALIDAR DATOS OBLIGATORIOS
-    // ============================================
+    console.log(' SaveRegistroUseCase - Datos recibidos:', registroData);
 
     // Validar userId
     if (!registroData.userId || registroData.userId.trim() === '') {
@@ -67,26 +61,14 @@ export class SaveRegistroUseCase {
     if (registroData.energia < 1 || registroData.energia > 10) {
       throw new Error('El nivel de energía debe estar entre 1 y 10');
     }
-
-    // ============================================
-    // 2. GENERAR ID SI NO TIENE
-    // ============================================
     
     if (!registroData.id) {
       registroData.id = `reg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      console.log('📊 ID generado en UseCase:', registroData.id);
+      console.log('ID generado en UseCase:', registroData.id);
     }
-
-    // ============================================
-    // 3. ASEGURAR QUE LA FECHA ESTÉ DEFINIDA
-    // ============================================
     
     const fecha = registroData.fecha || new Date();
 
-    // ============================================
-    // 4. CREAR ENTIDAD
-    // ============================================
-    
      const props = {
       id: registroData.id,
       userId: registroData.userId,
@@ -104,28 +86,18 @@ export class SaveRegistroUseCase {
       longitud: registroData.longitud,
     };
 
-    
-    // ============================================
-    // 5. VALIDAR ENTIDADa
-    // ============================================
-    
-
     const registro = new RegistroAnimo(props);
 
     if (!registro.isValid()) {
-      console.error('❌ Registro inválido:', registro);
+      console.error('Registro inválido:', registro);
       throw new Error('El registro no es válido. Verifica los datos obligatorios.');
     }
 
-    // ============================================
-    // 6. GUARDAR REGISTRO
-    // ============================================
-    
     try {
       // Guardar el registro (el repositorio devuelve el registro guardado)
       const saved = await this.repository.saveRegistro(registro);
       
-      console.log('✅ Registro guardado exitosamente:', saved.id);
+      console.log('Registro guardado exitosamente:', saved.id);
       
       // Si el repositorio devuelve un objeto plano, convertirlo a RegistroAnimo
       if (saved instanceof RegistroAnimo) {
@@ -135,7 +107,7 @@ export class SaveRegistroUseCase {
       return RegistroAnimo.fromJSON(saved);
       
     } catch (error) {
-      console.error('❌ Error en SaveRegistroUseCase:', error);
+      console.error(' Error en SaveRegistroUseCase:', error);
       
       if (error instanceof Error) {
         throw error;

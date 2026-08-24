@@ -1,10 +1,5 @@
-// src/domain/utils/bitacora/PrevencionSesgos.ts
 
 import { RegistroAnimo } from '../entities/bitacora/RegistroAnimo';
-
-// ============================================
-// INTERFACES Y TIPOS
-// ============================================
 
 interface Limites {
   minimoRegistros: number;
@@ -26,9 +21,6 @@ interface Alerta {
   timestamp: string;
 }
 
-// ============================================
-// CLASE
-// ============================================
 
 /**
  * Utilidad para prevenir sesgos en los mensajes y alertas emocionales

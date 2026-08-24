@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/DayInfoCard.jsx
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
@@ -24,7 +23,7 @@ export default function DayInfoCard({
   isToday,
   isFuture,
 }: DayInfoCardProps): JSX.Element {
-  // ===== DÍA FUTURO =====
+  //  DÍA FUTURO 
   
   const getEnergyColor = (energia: number): string => {
     if (energia >= 8) return ENERGY_COLORS.high;
@@ -81,7 +80,7 @@ export default function DayInfoCard({
     );
   }
 
-  // ===== SIN REGISTRO =====
+  // SIN REGISTRO 
   if (!registro) {
     return (
       <TouchableOpacity 
@@ -90,13 +89,7 @@ export default function DayInfoCard({
         activeOpacity={0.8}
       >
         <View style={styles.emptyContent}>
-          <Text style={styles.emptyDate}>
-            {fecha.toLocaleDateString('es-MX', { 
-              weekday: 'long', 
-              day: 'numeric', 
-              month: 'long' 
-            })}
-          </Text>
+          
           <View style={styles.emptyIconContainer}>
             <Feather name="edit-2" size={28} color="#FFFFFF" />
           </View>
@@ -354,7 +347,7 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(253, 248, 248, 0.94)',
     marginTop: 2,
   },
 
@@ -382,7 +375,7 @@ const styles = StyleSheet.create({
   },
   futureText: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(253, 248, 248, 0.94)',
     marginTop: 2,
   },
 });

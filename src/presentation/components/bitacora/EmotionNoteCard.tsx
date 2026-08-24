@@ -1,14 +1,9 @@
-// src/presentation/components/bitacora/EmotionNoteCard.jsx
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { COLORS } from '../../../../constants/colors';
 
 const { width } = Dimensions.get('window');
-
-// ============================================
-// INTERFACES
-// ============================================
 
 export interface NoteSection {
   question: string;
@@ -19,10 +14,6 @@ export interface EmotionNoteCardProps {
   /** Nota/reflexión del día */
   nota?: string | null;
 }
-
-// ============================================
-// FUNCIONES AUXILIARES
-// ============================================
 
 const extractSections = (text: string): NoteSection[] => {
   if (!text || text.trim() === '') {
@@ -82,10 +73,6 @@ const getTagColor = (question: string): string => {
   return '#F5F5F5';
 };
 
-// ============================================
-// COMPONENTE
-// ============================================
-
 export default function EmotionNoteCard({
   nota,
 }: EmotionNoteCardProps): JSX.Element {
@@ -134,7 +121,7 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     alignSelf: 'center',
     marginTop: 8,
-  },// Este no estaba
+  },
   noteText: {
     fontSize: 15,
     color: '#514343',

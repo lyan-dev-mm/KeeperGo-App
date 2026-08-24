@@ -1,4 +1,3 @@
-// src/presentation/components/EmotionWheel.jsx
 
 import React, { useRef, useEffect, JSX } from 'react';
 import {
@@ -43,7 +42,7 @@ const EMOCION_ANGLES: Record<string, number>= {
   neutral: BASE_ANGLE + 40, // 210°
   triste: BASE_ANGLE + 89,  // 270°
   molesto: BASE_ANGLE + 135, // 330°
-  ansioso: BASE_ANGLE + 220, // 390° → 30° (normalizado)
+  ansioso: BASE_ANGLE + 220, // 390° 
 };
 
 // Normalizar ángulo a 0-360
@@ -227,6 +226,7 @@ const styles = StyleSheet.create({
     width: 60,
     marginLeft: -5,
   },
+  
 // ===== SELECTOR CENTRAL (TRIÁNGULO) =====
   selectorContainer: {
     position: 'absolute',
@@ -264,14 +264,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   imageWrapper: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    borderRadius: IMAGE_SIZE / 2,
-    overflow: 'hidden',
+    //width: IMAGE_SIZE,
+    //height: IMAGE_SIZE,
+    //borderRadius: IMAGE_SIZE / 2,
+    //overflow: 'hidden',
   },
    imageWrapperSelected: {
-    borderWidth: 3,
-    borderColor: COLORS.primary,
+    //borderWidth: 3,
+    //borderColor: COLORS.primary,
   },
   emotionLabelSelected: {
     fontWeight: '700',

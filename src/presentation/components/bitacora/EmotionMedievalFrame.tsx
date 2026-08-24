@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/EmotionMedievalFrame.jsx
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
