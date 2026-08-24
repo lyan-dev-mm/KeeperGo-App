@@ -1,57 +1,115 @@
-import EncryptedStorage from 'react-native-encrypted-storage';
+// src/infrastructure/storage/SecureStorage.js
 
-export const SecureStorageService = {
-    // 1. Guardar datos de forma segura
-    async setItem(key, value) {
-        try {
-            // Si el valor es un objeto o arreglo, lo convertimos a texto
-            const stringValue = typeof value === 'object' ? JSON.stringify(value) : value;
-            await EncryptedStorage.setItem(key, stringValue);
-            return true;
-        } catch (error) {
-            console.error(`Error guardando de forma segura [${key}]:`, error);
-            return false;
-        }
-    },
+import * as SecureStore from 'expo-secure-store';
 
-    // 2. Recuperar datos encriptados
-    async getItem(key) {
-        try {
-            const value = await EncryptedStorage.getItem(key);
-            if (value) {
-                // Si el texto parece un objeto/arreglo JSON, lo transformamos de vuelta
-                try {
-                    return JSON.parse(value);
-                } catch {
-                    return value; // Es un texto plano
-                }
-            }
-            return null;
-        } catch (error) {
-            console.error(`Error recuperando datos seguros [${key}]:`, error);
-            return null;
-        }
-    },
-
-    // 3. Eliminar un dato en específico (ej. borrar token al cerrar sesión)
-    async removeItem(key) {
-        try {
-            await EncryptedStorage.removeItem(key);
-            return true;
-        } catch (error) {
-            console.error(`Error eliminando dato seguro [${key}]:`, error);
-            return false;
-        }
-    },
-
-    // 4. Limpiar todo el almacén por completo
-    async clearAll() {
-        try {
-            await EncryptedStorage.clear();
-            return true;
-        } catch (error) {
-            console.error("Error limpiando almacenamiento encriptado:", error);
-            return false;
-        }
+/**
+ * Servicio de almacenamiento seguro para datos sensibles
+ * Usa expo-secure-store (Keychain en iOS, Keystore en Android)
+ */
+export const SecureStorage = {
+  async setItem(key, value) {
+    try {
+      const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      await SecureStore.setItemAsync(key, stringValue);
+      console.log(` [SecureStorage] Guardado: ${key}`);
+      return true;
+    } catch (error) {
+      console.error(` [SecureStorage] Error guardando [${key}]:`, error);
+      return false;
     }
+  },
+
+  async getItem(key) {
+    try {
+      const value = await SecureStore.getItemAsync(key);
+      if (!value) return null;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    } catch (error) {
+      console.error(` [SecureStorage] Error recuperando [${key}]:`, error);
+      return null;
+    }
+  },
+
+  async removeItem(key) {
+    try {
+      await SecureStore.deleteItemAsync(key);
+      console.log(` [SecureStorage] Eliminado: ${key}`);
+      return true;
+    } catch (error) {
+      console.error(` [SecureStorage] Error eliminando [${key}]:`, error);
+      return false;
+    }
+  },
+
+  async clearAll() {
+    try {
+      // expo-secure-store no tiene clearAll, eliminamos las claves conocidas
+      await this.removeItem('auth_token');
+      await this.removeItem('user_data');
+      await this.removeItem('session_start');
+      await this.removeItem('bitacora_historial');
+      await this.removeItem('bitacora_ultimo');
+      console.log(' [SecureStorage] Almacenamiento limpiado');
+      return true;
+    } catch (error) {
+      console.error('❌ [SecureStorage] Error limpiando:', error);
+      return false;
+    }
+  },
+
+  async saveSession(token, userData = null) {
+    try {
+      await this.setItem('auth_token', token);
+      if (userData) {
+        await this.setItem('user_data', userData);
+      }
+      await this.setItem('session_start', Date.now());
+      console.log(' [SecureStorage] Sesión guardada');
+      return true;
+    } catch (error) {
+      console.error(' [SecureStorage] Error guardando sesión:', error);
+      return false;
+    }
+  },
+
+  async getSession() {
+    try {
+      const token = await this.getItem('auth_token');
+      if (!token) return null;
+      const userData = await this.getItem('user_data');
+      const sessionStart = await this.getItem('session_start');
+      return { token, userData, sessionStart };
+    } catch (error) {
+      console.error(' [SecureStorage] Error recuperando sesión:', error);
+      return null;
+    }
+  },
+
+  async clearSession() {
+    try {
+      await this.removeItem('auth_token');
+      await this.removeItem('user_data');
+      await this.removeItem('session_start');
+      console.log(' [SecureStorage] Sesión eliminada');
+      return true;
+    } catch (error) {
+      console.error(' [SecureStorage] Error eliminando sesión:', error);
+      return false;
+    }
+  },
+
+  async hasSession() {
+    try {
+      const token = await this.getItem('auth_token');
+      return token !== null;
+    } catch (error) {
+      return false;
+    }
+  }
 };
+
+export default SecureStorage;
