@@ -31,6 +31,8 @@ export function QuickActionsSheet({ visible, onClose }: QuickActionsSheetProps) 
     onClose();
     if (key === 'kii') {
       router.push('/kii-chat');
+    } else if (key === 'habito') {
+      router.push('/(tabs)/habits');
     } else {
       showComingSoon();
     }

@@ -15,6 +15,7 @@ export default function RootLayout() {
           <Stack.Screen name="admin-messages" options={{ headerShown: false }} />
           <Stack.Screen name="admin-milestones" options={{ headerShown: false }} />
           <Stack.Screen name="admin-users" options={{ headerShown: false }} />
+          <Stack.Screen name="ask-location" options={{ headerShown: false }} />
         </Stack>
       </PetActivityProvider>
     </AuthProvider>

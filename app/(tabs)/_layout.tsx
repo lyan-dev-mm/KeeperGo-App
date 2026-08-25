@@ -9,6 +9,9 @@ export default function TabsLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="home" />
           <Stack.Screen name="racha" />
+          <Stack.Screen name="habits" />
+          <Stack.Screen name="search-community" />
+          <Stack.Screen name="community-rules" />
         </Stack>
       </View>
       <LiquidTabBar />
