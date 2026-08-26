@@ -9,6 +9,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,10 +26,11 @@ interface SideDrawerProps {
   visible: boolean;
   onClose: () => void;
   userName: string;
+  profileImage?: string;
   menuItems: DrawerMenuItem[];
 }
 
-export function SideDrawer({ visible, onClose, userName, menuItems }: SideDrawerProps) {
+export function SideDrawer({ visible, onClose, userName, profileImage, menuItems }: SideDrawerProps) {
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(visible);
@@ -66,7 +68,11 @@ export function SideDrawer({ visible, onClose, userName, menuItems }: SideDrawer
             </TouchableOpacity>
 
             <View style={styles.profileSection}>
-              <Ionicons name="person-circle" size={90} color="#9DDC9A" />
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              ) : (
+                <Ionicons name="person-circle" size={90} color="#9DDC9A" />
+              )}
               <Text style={styles.userName}>{userName}</Text>
             </View>
 
@@ -114,6 +120,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20 },
   menuButton: { marginTop: 10, marginBottom: 10 },
   profileSection: { alignItems: 'center', marginTop: 10, marginBottom: 20 },
+  profileImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#F5F5F5',
+  },
   userName: { marginTop: 8, fontSize: 18, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)' },
   divider: { height: 2, backgroundColor: '#9DDC9A', borderRadius: 2, marginBottom: 16 },
   menuList: { paddingBottom: 40 },
