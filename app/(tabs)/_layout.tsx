@@ -10,8 +10,6 @@ export default function TabsLayout() {
       <Stack.Screen name="home" />
       <Stack.Screen name="racha" options={{ headerShown: true, title: 'Tu Racha' }} />
       <Stack.Screen name="bitacora" />
-          <Stack.Screen name="home" />
-          <Stack.Screen name="racha" />
           <Stack.Screen name="habits" />
           <Stack.Screen name="search-community" />
           <Stack.Screen name="community-rules" />

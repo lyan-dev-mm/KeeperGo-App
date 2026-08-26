@@ -1,4 +1,4 @@
-
+// src/presentation/screens/relajacion/EjercicioRespiracionScreen.tsx
 import React, { useState, useEffect, useRef, useCallback, JSX } from 'react';
 import {
   View,

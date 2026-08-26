@@ -1,4 +1,3 @@
-// src/presentation/screens/bitacora/EmotionDetailScreen.tsx
 
 import React, { JSX, useState } from 'react';
 import {
@@ -95,9 +94,6 @@ export default function EmotionDetailScreen(): JSX.Element {
 
   const { deleteRegistro, saveRegistro } = useBitacoraStore();
 
-  // ============================================
-  // ESTADO
-  // ============================================
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionItem | null>(() => {
@@ -115,9 +111,6 @@ export default function EmotionDetailScreen(): JSX.Element {
   const [note, setNote] = useState<string>(registroObj?.nota || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
-  // ============================================
-  // VALIDACIÓN
-  // ============================================
 
   if (!registroObj) {
     return (
@@ -132,10 +125,6 @@ export default function EmotionDetailScreen(): JSX.Element {
     );
   }
 
-  // ============================================
-  // FORMATO DE FECHA
-  // ============================================
-
   const fechaFormateada = fechaDate.toLocaleDateString('es-MX', {
     weekday: 'long',
     day: 'numeric',
@@ -143,9 +132,6 @@ export default function EmotionDetailScreen(): JSX.Element {
     year: 'numeric',
   });
 
-  // ============================================
-  // HANDLERS
-  // ============================================
 
   const handleEdit = (): void => {
     router.push({
@@ -163,11 +149,10 @@ export default function EmotionDetailScreen(): JSX.Element {
       return;
     }
 
-    // Crear objeto con el formato correcto para SaveRegistroData
     const updatedRegistro: SaveRegistroData = {
       id: registroObj.id,
       userId: registroObj.userId,
-      fecha: new Date(registroObj.fecha), // ← Convertir a Date
+      fecha: new Date(registroObj.fecha), 
       emocion: selectedEmotion.id,
       emocionLabel: selectedEmotion.label,
       color: selectedEmotion.color,
@@ -195,7 +180,7 @@ export default function EmotionDetailScreen(): JSX.Element {
   const handleDelete = async (): Promise<void> => {
     if (!registroObj || !registroObj.id) {
       Alert.alert('Error', 'El registro no tiene un ID válido');
-      console.error('❌ registro.id es undefined:', registroObj);
+      console.error(' registro.id es undefined:', registroObj);
       return;
     }
 
@@ -208,7 +193,7 @@ export default function EmotionDetailScreen(): JSX.Element {
         Alert.alert('Error', 'No se pudo eliminar el registro');
       }
     } catch (error) {
-      console.error('❌ Error en handleDelete:', error);
+      console.error('Error en handleDelete:', error);
       Alert.alert('Error', 'No se pudo eliminar el registro');
     }
   };
@@ -228,10 +213,6 @@ export default function EmotionDetailScreen(): JSX.Element {
     setSelectedEnergy(registroObj?.energia || 5);
     setNote(registroObj?.nota || '');
   };
-
-  // ============================================
-  // RENDERIZADO
-  // ============================================
 
   return (
     <SafeAreaView style={styles.container}>

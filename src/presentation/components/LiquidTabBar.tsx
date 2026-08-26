@@ -13,7 +13,7 @@ interface TabConfig {
 
 const LEFT_TABS: TabConfig[] = [
   { key: 'home', icon: 'home', route: '/(tabs)/home' },
-  { key: 'emociones', icon: 'heart' },
+  { key: 'emociones', icon: 'heart', route: '/(tabs)/bitacora' },
 ];
 
 const RIGHT_TABS: TabConfig[] = [

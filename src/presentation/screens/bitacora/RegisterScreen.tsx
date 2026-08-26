@@ -1,4 +1,3 @@
-// src/presentation/screens/bitacora/RegisterScreen.jsx
 
 import React, { useState, useRef, useEffect, JSX } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';

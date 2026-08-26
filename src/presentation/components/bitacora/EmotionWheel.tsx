@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     marginLeft: -5,
   },
   
-// ===== SELECTOR CENTRAL (TRIÁNGULO) =====
+// SELECTOR CENTRAL (TRIÁNGULO) 
   selectorContainer: {
     position: 'absolute',
     width: 60,

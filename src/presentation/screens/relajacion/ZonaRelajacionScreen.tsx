@@ -1,4 +1,3 @@
-// src/presentation/screens/relajacion/ZonaRelajacionScreen.tsx
 import React, { JSX } from 'react';
 import {
   View,
@@ -82,11 +81,13 @@ export default function ZonaRelajacionScreen(): JSX.Element {
   };
 
   const handleEjercicioPress = (ejercicioId: string) => {
-    router.push({
-      pathname: '/(modals)/EjercicioRespiracion',
-      params: { ejercicioId },
-    });
-  };
+    console.log('Navegando a ejercicio:', ejercicioId);
+
+    router.navigate({
+        pathname: '/(modals)/EjercicioRespiracion',
+        params: { ejercicioId },
+      });
+    };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

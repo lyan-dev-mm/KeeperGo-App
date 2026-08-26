@@ -24,6 +24,7 @@ const ACTIONS: ActionItem[] = [
   { key: 'habito', icon: 'star-outline', label: 'Nuevo hábito' },
   { key: 'emocion', icon: 'happy-outline', label: 'Registrar emoción' },
   { key: 'kii', icon: 'chatbubble-ellipses-outline', label: 'Conversar con Kii' },
+  
 ];
 
 export function QuickActionsSheet({ visible, onClose }: QuickActionsSheetProps) {
@@ -33,7 +34,10 @@ export function QuickActionsSheet({ visible, onClose }: QuickActionsSheetProps) 
       router.push('/kii-chat');
     } else if (key === 'habito') {
       router.push('/(tabs)/habits');
-    } else {
+    } else if (key === 'emocion') {
+      router.push('/(tabs)/bitacora');
+    } 
+    else {
       showComingSoon();
     }
   };

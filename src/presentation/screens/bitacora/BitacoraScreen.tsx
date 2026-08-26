@@ -1,4 +1,4 @@
-// src/presentation/screens/bitacora/BitacoraScreen.tsx
+
 import React, { useState, useCallback, JSX, useEffect } from 'react';
 import {
   View,
@@ -15,7 +15,6 @@ import EmotionCalendar from '../../components/bitacora/EmotionCalendar';
 import PanelBienestar from '../../components/bitacora/PanelBienestar';
 import DayInfoCard from '../../components/bitacora/DayInfoCard';
 import RegistroAnimo from '../../../domain/entities/bitacora/RegistroAnimo';
-import BottomNavigation from '../../components/BottomNavigation';
 import { useBitacoraStore } from '../../store/bitacoraStore';
 
 interface RouteParams {
@@ -173,7 +172,6 @@ export default function BitacoraScreen(): JSX.Element {
         />
       </ScrollView>
 
-      <BottomNavigation activeTab="bitacora" />
     </SafeAreaView>
   );
 }

@@ -20,7 +20,7 @@ export default function HomeScreen() {
 
   const menuItems: DrawerMenuItem[] = [
     { label: 'Perfil', onPress: showComingSoon },
-    { label: 'Comunidad de hábitos', onPress: showComingSoon },
+    { label: 'Comunidad de hábitos', onPress:  () => router.push('/(tabs)/habits') },
     { label: 'Bitácora de emociones', onPress: () => router.push('/(tabs)/bitacora') },
     { label: 'Zona de relajación', onPress: () => router.push('/zona-relajacion') },
     { label: 'Técnicas de Estudio', onPress: showComingSoon },
@@ -75,26 +75,6 @@ export default function HomeScreen() {
           <Text style={styles.motivationBold}>¡Sigue así!</Text>
         </View>
       </ScrollView>
-
-      {/*
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => {}}>
-          <Ionicons name="home" size={26} color="#4CAF50" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/bitacora')}>
-          <Ionicons name="heart-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="add-circle-outline" size={30} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/racha')}>
-          <Ionicons name="paw-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="person-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-      </View>
-      */}
 
       <SideDrawer
         visible={drawerVisible}

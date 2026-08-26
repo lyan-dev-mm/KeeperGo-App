@@ -1,4 +1,3 @@
-// src/presentation/components/bitacora/IntensitySlider.tsx
 
 import React, { useState, useRef, useEffect, JSX } from 'react';
 import {

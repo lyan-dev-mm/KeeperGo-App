@@ -15,6 +15,7 @@ export default function RootLayout() {
             <Stack.Screen name='zona-relajacion' options={{ headerShown: false, animation: 'slide_from_right' }} />
             <Stack.Screen name="(modals)/RegisterEmotion" options={{ presentation: 'modal', headerShown: false, }} />
             <Stack.Screen name="(modals)/EmotionDetail" options={{ presentation: 'modal', headerShown: false, }}  />
+            <Stack.Screen name="(modals)/EjercicioRespiracion" options={{ presentation: 'modal', headerShown: false, }} />
             <Stack.Screen name="kii-chat" options={{ headerShown: false }} />
             <Stack.Screen name="admin" options={{ headerShown: false }} />
             <Stack.Screen name="admin-messages" options={{ headerShown: false }} />
