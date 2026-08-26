@@ -12,6 +12,7 @@ export default function TabsLayout() {
           <Stack.Screen name="habits" />
           <Stack.Screen name="search-community" />
           <Stack.Screen name="community-rules" />
+          <Stack.Screen name="habit-detail" />
         </Stack>
       </View>
       <LiquidTabBar />

@@ -1,12 +1,9 @@
+// src/presentation/screens/CommunityRulesScreen.tsx
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-function showComingSoon() {
-  Alert.alert('Próximamente', 'Estamos trabajando en esto, pronto estará disponible.');
-}
 
 // Reglas genéricas de ejemplo — mientras no exista un backend de
 // comunidades reales, se muestra el mismo set de reglas para cualquiera.
@@ -26,22 +23,21 @@ export default function CommunityRulesScreen() {
   const bannerColor = color ?? '#FF8FAB';
 
   const handleJoin = () => {
-    Alert.alert('Próximamente', 'Muy pronto podrás unirte a esta comunidad.');
-    router.push('/(tabs)/habits');
+    // Cambiamos la alerta por la navegación de regreso al detalle
+    router.replace({
+      pathname: '/(tabs)/community-detail',
+      params: { 
+        title: communityTitle, 
+        color: bannerColor, 
+        isMember: 'true' // Avisamos que ya es miembro
+      }
+    });
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Reglas de la comunidad</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton} onPress={showComingSoon}>
-            <Ionicons name="search-outline" size={22} color="#4A3E38" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={showComingSoon}>
-            <Ionicons name="notifications-outline" size={22} color="#4A4A4A" />
-          </TouchableOpacity>
-        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -89,8 +85,6 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#4A3E38' },
-  headerIcons: { flexDirection: 'row' },
-  iconButton: { marginLeft: 15 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
   banner: {
     height: 130,

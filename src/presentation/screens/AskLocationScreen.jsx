@@ -9,11 +9,11 @@ export default function AskLocationScreen() {
       'Próximamente',
       'Muy pronto podrás guardar tu ubicación para recibir recomendaciones cercanas.'
     );
-    router.replace('/(tabs)/home');
+    router.replace('/register-location'); 
   };
 
   const handleDecline = () => {
-    router.replace('/(tabs)/home');
+    router.replace('/home')
   };
 
   return (

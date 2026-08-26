@@ -1,3 +1,4 @@
+// src/presentation/screens/SearchCommunityScreen.tsx
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,36 +16,41 @@ interface Community {
   color: string;
 }
 
-// Datos de ejemplo — cuando exista un backend real de comunidades, esta
-// lista se reemplaza por una consulta a Firestore, sin tocar el resto
-// de la pantalla.
+// Lista variada de comunidades reales según lo que pediste
 const COMMUNITIES: Community[] = [
-  { id: 1, title: 'Lectores por el mundo', subtitle: 'Programas de apoyo a la producció...', color: '#FF8FAB' },
-  { id: 2, title: 'Lectores por el mundo', subtitle: 'Plataforma de capacitación de la SAD...', color: '#20B2AA' },
-  { id: 3, title: 'Lectores por el mundo', subtitle: 'Realiza investigaciones y desarrolla...', color: '#FFD700' },
-  { id: 4, title: 'Lectores por el mundo', subtitle: 'Opera programas de SADER y otra...', color: '#9370DB' },
+  { id: 1, title: 'Lectores del mundo', subtitle: 'Comparte reseñas y libros favoritos.', color: '#FF8FAB' },
+  { id: 2, title: 'Repostería Creativa', subtitle: 'Recetas, trucos y pasteles deliciosos.', color: '#20B2AA' },
+  { id: 3, title: 'Canto y Coros', subtitle: 'Ejercicios vocales para mejorar tu voz.', color: '#FFD700' },
+  { id: 4, title: 'Inglés Fluido', subtitle: 'Práctica diaria para dominar el idioma.', color: '#9370DB' },
+  { id: 5, title: 'Yoga y Meditación', subtitle: 'Rutinas para encontrar calma y balance.', color: '#FFA07A' },
+  { id: 6, title: 'Francés Básico', subtitle: 'Aprende desde cero con ejercicios guiados.', color: '#20B2AA' },
+  { id: 7, title: 'Guitarra para principiantes', subtitle: 'Acordes básicos para tocar tus canciones.', color: '#FF8FAB' },
+  { id: 8, title: 'Running 5K', subtitle: 'Motivación y retos para correr cada semana.', color: '#9370DB' },
+  { id: 9, title: 'Cine Club', subtitle: 'Debate sobre estrenos y clásicos del cine.', color: '#FFD700' },
 ];
 
 const STATE_COMMUNITY: Community = {
-  id: 5,
-  title: 'Lectores por el mundo',
-  subtitle: 'Aquí encontrarás capacitación y ases...',
+  id: 10,
+  title: 'Comunidad de tu estado',
+  subtitle: 'Personas cerca de ti con los mismos hábitos.',
   color: '#FFA07A',
 };
 
 export default function SearchCommunityScreen() {
   const [query, setQuery] = useState('');
 
+  // Búsqueda predictiva mejorada: filtra por título Y subtítulo
   const filtered = COMMUNITIES.filter(
     (c) =>
       c.title.toLowerCase().includes(query.trim().toLowerCase()) ||
       c.subtitle.toLowerCase().includes(query.trim().toLowerCase())
   );
 
-  const openCommunity = (community: Community) => {
+   const openCommunity = (community: Community) => {
     router.push({
-      pathname: '/(tabs)/community-rules',
-      params: { title: community.title, color: community.color },
+      pathname: '/(tabs)/community-detail',
+      // Agregamos isMember: 'false' para que sepa que aún no se ha unido
+      params: { title: community.title, color: community.color, isMember: 'false' },
     });
   };
 
