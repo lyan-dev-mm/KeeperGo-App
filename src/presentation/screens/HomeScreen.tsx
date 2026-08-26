@@ -76,6 +76,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
+      {/*
       <View style={styles.bottomNav}>
         <TouchableOpacity onPress={() => {}}>
           <Ionicons name="home" size={26} color="#4CAF50" />
@@ -93,6 +94,7 @@ export default function HomeScreen() {
           <Ionicons name="person-outline" size={26} color="#9E9E9E" />
         </TouchableOpacity>
       </View>
+      */}
 
       <SideDrawer
         visible={drawerVisible}

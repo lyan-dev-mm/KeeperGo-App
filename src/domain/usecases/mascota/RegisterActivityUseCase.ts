@@ -1,9 +1,11 @@
 import { PetRepository } from '../../repositories/mascota/PetRepository';
 import { PetEntity } from '../../entities/mascota/Pet';
 import { GetPetUseCase } from './GetPetUseCase';
+import { GetMilestonesUseCase } from './GetMilestonesUseCase';
+import { MilestoneRepository } from '../../repositories/mascota/MilestoneRepository';
+import { MilestoneEntity } from '../../entities/mascota/Milestone';
 import { getTodayKey, getYesterdayKey } from '../../../utils/dateUtils';
 import { getXpRequiredForLevel } from '../../../utils/xpUtils';
-import { MILESTONES, Milestone } from '../../../../constants/Milestones';
 
 const TEST_XP_REWARD = 50;
 
@@ -11,14 +13,16 @@ export interface RegisterActivityResult {
   pet: PetEntity;
   streakIncreased: boolean;
   leveledUp: boolean;
-  unlockedMilestone: Milestone | null;
+  unlockedMilestone: MilestoneEntity | null;
 }
 
 export class RegisterActivityUseCase {
   private getPetUseCase: GetPetUseCase;
+  private getMilestonesUseCase: GetMilestonesUseCase;
 
-  constructor(private repository: PetRepository) {
+  constructor(private repository: PetRepository, milestoneRepository: MilestoneRepository) {
     this.getPetUseCase = new GetPetUseCase(repository);
+    this.getMilestonesUseCase = new GetMilestonesUseCase(milestoneRepository);
   }
 
   async execute(userId: string): Promise<RegisterActivityResult> {
@@ -48,8 +52,14 @@ export class RegisterActivityUseCase {
       required = getXpRequiredForLevel(level);
     }
 
-    const unlockedMilestone =
-      MILESTONES.find((m) => previousBest < m.days && newBest >= m.days) ?? null;
+    let unlockedMilestone: MilestoneEntity | null = null;
+    try {
+      const milestones = await this.getMilestonesUseCase.execute();
+      unlockedMilestone = milestones.find((m) => previousBest < m.days && newBest >= m.days) ?? null;
+    } catch {
+      // Si falla la carga de hitos desde Firestore, no bloqueamos el registro
+      // de actividad — simplemente no se detecta el desbloqueo esa vez.
+    }
 
     const updated: PetEntity = {
       ...pet,
