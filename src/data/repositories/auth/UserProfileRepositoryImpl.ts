@@ -3,7 +3,7 @@ import { db } from '../../../infrastructure/firebase/firebaseConfig';
 import { UserProfileRepository } from '../../../domain/repositories/auth/UserProfileRepository';
 import { UserProfileEntity } from '../../../domain/entities/auth/UserProfile';
 
-const COLLECTION = 'users';
+const COLLECTION = 'userProfiles';
 
 export class UserProfileRepositoryImpl implements UserProfileRepository {
   async createUserProfile(profile: UserProfileEntity): Promise<void> {
@@ -11,7 +11,7 @@ export class UserProfileRepositoryImpl implements UserProfileRepository {
       ...profile,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
   }
 
   async getUserProfile(uid: string): Promise<UserProfileEntity | null> {

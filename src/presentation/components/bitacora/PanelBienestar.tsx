@@ -11,6 +11,7 @@ import {
   NativeSyntheticEvent,
 } from 'react-native';
 import { COLORS } from '../../../../constants/colors';
+import { router } from 'expo-router';
 
 export type NivelAlerta = 'bajo' | 'medio' | 'alto';
 
@@ -228,22 +229,17 @@ export default function PanelBienestar({
             {renderProgressIndicator()}
           </View>
 
+
           <View style={styles.actionsContainer}>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonPrimary]}
-              onPress={() => {
-                // TODO: Navegar a zona de relajación
-                console.log('Navegar a zona de relajación');
-              }}
+              onPress={() =>  router.push('/zona-relajacion')}
             >
               <Text style={styles.actionButtonText}>Zona de relajación</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSecondary]}
-              onPress={() => {
-                // TODO: Navegar a chat con Kii
-                console.log('Navegar a hablar con Kii');
-              }}
+              onPress={() =>  router.push('/kii-chat')}
             >
               <Text style={styles.actionButtonTextSecondary}>Hablar con Kii</Text>
             </TouchableOpacity>
