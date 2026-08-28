@@ -1,9 +1,17 @@
 import { Stack } from 'expo-router';
 import { AuthProvider } from '../src/presentation/contexts/AuthContext';
 import { PetActivityProvider } from '../src/presentation/contexts/PetActivityContext';
+import { Platform } from 'react-native';
+import { useEffect } from 'react';
 import { HabitsProvider } from '../src/presentation/contexts/HabitsContext';  
 
+if (Platform.OS === 'web') {
+  require('leaflet/dist/leaflet.css');
+}
+
+
 export default function RootLayout() {
+  
   return (
      <AuthProvider>
         <PetActivityProvider>
@@ -22,6 +30,9 @@ export default function RootLayout() {
             <Stack.Screen name="admin-milestones" options={{ headerShown: false }} />
             <Stack.Screen name="admin-users" options={{ headerShown: false }} />
             <Stack.Screen name="ask-location" options={{ headerShown: false }} />
+          <Stack.Screen name="specialists" options={{ headerShown: false }} />
+          <Stack.Screen name="specialist-profile" options={{ headerShown: false }} />
+          <Stack.Screen name="specialist-chat" options={{ headerShown: false }} />
           </Stack>
         </HabitsProvider>
       </PetActivityProvider>

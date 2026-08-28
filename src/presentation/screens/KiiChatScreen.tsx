@@ -8,7 +8,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -90,8 +89,9 @@ export default function KiiChatScreen() {
     }
   };
 
+  // ✅ CAMBIO AQUÍ: Ahora navega a la lista de especialistas
   const handleLinkPress = () => {
-    Alert.alert('Próximamente', 'Estamos trabajando en esto, pronto estará disponible.');
+    router.push('/specialists');
   };
 
   return (

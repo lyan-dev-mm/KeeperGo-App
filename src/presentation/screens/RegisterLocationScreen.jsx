@@ -1,13 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import React, {
+  useRef,
+  useState,
+} from 'react';
+
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Alert,
+  Platform,
+} from 'react-native';
+
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
 
 export default function RegisterLocation() {
   const [modalVisible, setModalVisible] = useState(true);
   const [markerCoordinate, setMarkerCoordinate] = useState(null);
-  const [showTooltip, setShowTooltip] = useState(false);
   
   const mapRef = useRef(null);
 
@@ -18,269 +28,349 @@ export default function RegisterLocation() {
     longitudeDelta: 0.05,
   };
 
-  // Función para mostrar el tooltip (mensaje superior) temporalmente
-  useEffect(() => {
-    if (showTooltip) {
-      const timer = setTimeout(() => setShowTooltip(false), 5000); // Se quita solo a los 5 segundos
-      return () => clearTimeout(timer);
-    }
-  }, [showTooltip]);
+  // =====================================================
+  // USAR UBICACIÓN ACTUAL
+  // =====================================================
 
   const handleUseCurrentLocation = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu ubicación.');
-      return;
-    }
-
     try {
-      let location = await Location.getCurrentPositionAsync({});
-      
+      // -------------------------------------------------
+      // WEB
+      // -------------------------------------------------
+
+      if (Platform.OS === 'web') {
+        if (!navigator.geolocation) {
+          Alert.alert(
+            'Ubicación no disponible',
+            'Tu navegador no permite obtener la ubicación.'
+          );
+
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const newCoords = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              latitudeDelta: 0.005,
+              longitudeDelta: 0.005,
+            };
+
+            setMarkerCoordinate(newCoords);
+
+            if (mapRef.current) {
+              mapRef.current.animateToRegion(
+                newCoords,
+                1500
+              );
+            }
+
+            setModalVisible(false);
+          },
+          (error) => {
+            console.log(
+              'Error de geolocalización Web:',
+              error
+            );
+
+            Alert.alert(
+              'Permiso de ubicación',
+              'Debes permitir el acceso a tu ubicación desde el navegador.'
+            );
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          }
+        );
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // ANDROID / IOS
+      // -------------------------------------------------
+
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permiso necesario',
+          'Necesitamos acceso a tu ubicación.'
+        );
+
+        return;
+      }
+
+      const location =
+        await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+
       const newCoords = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.005, 
+        latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       };
 
       setMarkerCoordinate(newCoords);
-      
+
       if (mapRef.current) {
-        mapRef.current.animateToRegion(newCoords, 1500);
+        mapRef.current.animateToRegion(
+          newCoords,
+          1500
+        );
       }
-      
+
       setModalVisible(false);
     } catch (error) {
-      Alert.alert('Error de GPS', 'Asegúrate de tener la ubicación encendida en tu celular.');
+      console.error(
+        'Error obteniendo ubicación:',
+        error
+      );
+
+      Alert.alert(
+        'Error de ubicación',
+        'No fue posible obtener tu ubicación. Asegúrate de tener activado el GPS o los permisos de ubicación.'
+      );
     }
   };
+
+  // =====================================================
+  // OTRA UBICACIÓN
+  // =====================================================
 
   const handleOtherLocation = () => {
     setModalVisible(false);
-    // Ya no usamos Alert, simplemente mostramos el mensaje contextual arriba
-    setShowTooltip(true); 
+
+    Alert.alert(
+      'Modo Manual',
+      'Toca cualquier punto en el mapa para colocar tu ubicación.'
+    );
   };
 
-  const handleMapPress = (event) => {
-    if (!modalVisible) {
-      setMarkerCoordinate(event.nativeEvent.coordinate);
-      setShowTooltip(false); // Ocultamos el tooltip en cuanto coloca el pin
+  // =====================================================
+  // TOCAR MAPA
+  // =====================================================
+
+  const handleMapPress = (coordinate) => {
+    if (modalVisible) {
+      return;
     }
+
+    let newCoordinate;
+
+    // -----------------------------------------------
+    // WEB
+    // -----------------------------------------------
+
+    if (Platform.OS === 'web') {
+      newCoordinate = {
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      };
+    }
+
+    // -----------------------------------------------
+    // ANDROID / IOS
+    // -----------------------------------------------
+
+    else {
+      newCoordinate = {
+        latitude:
+          coordinate.nativeEvent.coordinate.latitude,
+
+        longitude:
+          coordinate.nativeEvent.coordinate.longitude,
+
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      };
+    }
+
+    setMarkerCoordinate(newCoordinate);
   };
 
+  // --- NUEVA FUNCIÓN PARA GUARDAR ---
   const handleConfirmLocation = () => {
-    if (markerCoordinate) {
-      console.log('Coordenadas guardadas:', markerCoordinate);
-      
+    if (!markerCoordinate) {
       Alert.alert(
         '¡Ubicación Guardada!',
-        'Tu ubicación se ha registrado correctamente. Ya puedes encontrar apoyo cerca de ti.',
-        [
-          { 
-            text: 'Ir al Inicio', 
-            onPress: () => router.replace('/(tabs)/home') 
-          }
-        ]
+        `Latitud: ${markerCoordinate.latitude.toFixed(4)}\nLongitud: ${markerCoordinate.longitude.toFixed(4)}`,
+        [{ text: 'Excelente' }]
       );
     }
   };
 
   return (
     <View style={styles.container}>
-      
-      <MapView 
-        ref={mapRef} 
-        provider={PROVIDER_GOOGLE} 
-        style={styles.map} 
-        initialRegion={initialRegion} 
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        showsCompass={true}
-        toolbarEnabled={false} // Quitamos el botón de Google Maps para que se vea más limpio (puedes ponerlo en true si lo quieres)
-        onPress={handleMapPress}
-      >
-        {markerCoordinate && (
-          <Marker 
-            coordinate={markerCoordinate} 
-            title="Tu ubicación elegida" 
-            pinColor="red"
-          />
-        )}
-      </MapView>
+      {/* MAPA */}
 
-      {/* --- MENSAJE CONTEXTUAL (TOOLTIP) EN LA PARTE SUPERIOR --- */}
-      {showTooltip && !markerCoordinate && (
-        <View style={styles.tooltipContainer}>
-          <Text style={styles.tooltipText}>
-            👆 Toca cualquier punto del mapa para colocar tu ubicación
-          </Text>
-        </View>
-      )}
+      <LocationMap
+        ref={mapRef}
+        initialRegion={initialRegion}
+        markerCoordinate={markerCoordinate}
+        onMapPress={handleMapPress}
+      />
 
-      {/* --- BOTÓN DE CONFIRMAR --- */}
+      {/* BOTÓN CONFIRMAR */}
+
       {markerCoordinate && (
         <View style={styles.confirmContainer}>
-          <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLocation}>
-            <Text style={styles.confirmButtonText}>Confirmar Ubicación</Text>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirmLocation}
+          >
+            <Text style={styles.confirmButtonText}>
+              Confirmar Ubicación
+            </Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* MODAL INICIAL */}
 
       {/* --- MODAL DE OPCIONES (LIMPIO Y MODERNO) --- */}
       <Modal
         animationType="fade"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* Icono decorativo */}
-            <View style={styles.iconContainer}>
-              <Text style={styles.icon}>📍</Text>
-            </View>
-            
-            <Text style={styles.modalTitle}>¿Cómo quieres ubicarte?</Text>
-            <Text style={styles.modalSubtitle}>
-              Selecciona una opción para personalizar tu experiencia.
+            <Text style={styles.modalTitle}>
+              Ubicación
             </Text>
 
-            <TouchableOpacity style={styles.primaryButton} onPress={handleUseCurrentLocation}>
-              <Text style={styles.buttonTextPrimary}>Usar mi ubicación Actual</Text>
+            {/* UBICACIÓN ACTUAL */}
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleUseCurrentLocation}
+            >
+              <Text style={styles.buttonText}>
+                Usar mi ubicación Actual
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleOtherLocation}>
-              <Text style={styles.buttonTextSecondary}>Elegir en el mapa</Text>
+            {/* UBICACIÓN MANUAL */}
+
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleOtherLocation}
+            >
+              <Text style={styles.buttonText}>
+                Otra
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
 
+// =======================================================
+// ESTILOS
+// =======================================================
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  map: { width: '100%', height: '100%' },
-  
-  // --- ESTILOS DEL MENSAJE SUPERIOR (TOOLTIP) ---
-  tooltipContainer: {
-    position: 'absolute',
-    top: 60, // Aparece arriba, debajo de la barra de estado
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    alignItems: 'center',
-    zIndex: 10, // Asegura que esté por encima del mapa
-  },
-  tooltipText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
 
-  // --- ESTILOS DEL MODAL ---
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Fondo oscuro elegante
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  modalContent: { 
-    backgroundColor: '#FFFFFF', // Fondo blanco limpio (ya no verde)
-    padding: 25, 
-    borderRadius: 24, 
-    width: '85%', 
-    maxWidth: 350, 
-    alignItems: 'center', 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 10 }, 
-    shadowOpacity: 0.25, 
-    shadowRadius: 15, 
-    elevation: 10 
-  },
-  iconContainer: {
-    width: 70,
-    height: 70,
-    backgroundColor: '#E8F5E9', // Fondo verde muy suave para el icono
-    borderRadius: 35,
-    alignItems: 'center',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalContent: {
+    backgroundColor: '#D1F5B5',
+    padding: 25,
+    borderRadius: 15,
+    width: '80%',
+    maxWidth: 350,
+    alignItems: 'center',
+
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+
+    elevation: 5,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#000',
+  },
+
+  primaryButton: {
+    backgroundColor: '#A3D58C',
+    width: '100%',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
     marginBottom: 15,
   },
-  icon: {
-    fontSize: 32,
+
+  secondaryButton: {
+    backgroundColor: '#C5E1A5',
+    width: '100%',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
   },
-  modalTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    marginBottom: 8, 
-    color: '#1A1A1A',
-    textAlign: 'center'
-  },
-  modalSubtitle: {
+
+  buttonText: {
+    color: '#000',
+    fontWeight: 'bold',
     fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 25,
-    lineHeight: 20,
   },
-  primaryButton: { 
-    backgroundColor: '#58C759', 
-    width: '100%', 
-    padding: 16, 
-    borderRadius: 14, 
-    alignItems: 'center', 
-    marginBottom: 12 
-  },
-  buttonTextPrimary: { 
-    color: '#FFFFFF', 
-    fontWeight: 'bold', 
-    fontSize: 15 
-  },
-  secondaryButton: { 
-    backgroundColor: '#F5F5F5', // Fondo gris muy suave
-    width: '100%', 
-    padding: 16, 
-    borderRadius: 14, 
-    alignItems: 'center', 
-    borderWidth: 1,
-    borderColor: '#E0E0E0'
-  },
-  buttonTextSecondary: { 
-    color: '#333333', 
-    fontWeight: '600', 
-    fontSize: 15 
-  },
-  
-  // --- ESTILOS DEL BOTÓN DE CONFIRMAR ---
+
   confirmContainer: {
     position: 'absolute',
-    bottom: 40, // Lo bajamos un poco porque ya no hay un modal encima
+    bottom: 40,
     width: '100%',
     paddingHorizontal: 25,
     alignItems: 'center',
   },
+
   confirmButton: {
     backgroundColor: '#58C759',
-    paddingVertical: 16,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-    width: '100%',
-    maxWidth: 350,
+    paddingVertical: 15,
+    borderRadius: 12,
     alignItems: 'center',
+
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
     shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+    shadowRadius: 4,
+
+    elevation: 5,
   },
+
   confirmButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
