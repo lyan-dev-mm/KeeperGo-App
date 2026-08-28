@@ -1,4 +1,6 @@
-import React, { createContext, useState, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../infrastructure/firebase/firebaseConfig';
 import { AuthRepositoryImpl } from '../../data/repositories/AuthRepositoryImpl';
 import { LoginUseCase } from '../../domain/usecases/LoginUseCase';
 import { RegisterUseCase } from '../../domain/usecases/RegisterUseCase';
@@ -7,6 +9,7 @@ import { UserEntity } from '../../domain/entities/User';
 interface AuthContextType {
   user: UserEntity | null;
   isLoading: boolean;
+  isInitializing: boolean;
   errorMessage: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, fullName?: string) => Promise<boolean>;
@@ -23,7 +26,27 @@ const registerUseCase = new RegisterUseCase(repository);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserEntity | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log('🔥 onAuthStateChanged disparado. Usuario:', firebaseUser?.email ?? 'NINGUNO');
+
+      if (firebaseUser) {
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          name: firebaseUser.displayName ?? '',
+        });
+      } else {
+        setUser(null);
+      }
+      setIsInitializing(false);
+    });
+
+    return unsubscribe;
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -68,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, errorMessage, login, register, logout, clearError }}
+      value={{ user, isLoading, isInitializing, errorMessage, login, register, logout, clearError }}
     >
       {children}
     </AuthContext.Provider>

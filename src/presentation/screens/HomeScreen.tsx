@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components/Card';
 import { SideDrawer, DrawerMenuItem } from '../components/SideDrawer';
 import { useAuth } from '../hooks/useAuth';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { ProfileCustomizationModal } from '../components/notifications/ProfileCustomizationModal';
+import { ProfileTypeSelector } from '../components/profile/ProfileTypeSelector';
 
 function showComingSoon() {
   Alert.alert('Próximamente', 'Estamos trabajando en esto, pronto estará disponible.');
@@ -13,16 +16,20 @@ function showComingSoon() {
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
+  const { profile } = useUserProfile();
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
 
-  const fullName = user?.name ?? '';
+  const fullName = profile?.generalInfo?.username || profile?.professionalInfo?.professionalName || profile?.institutionInfo?.institutionName || user?.name || '';
   const firstName = fullName.split(' ')[0] || user?.email?.split('@')[0] || 'Usuario';
+  const profileImageUrl = profile?.profileImage?.url;
 
   const menuItems: DrawerMenuItem[] = [
-    { label: 'Perfil', onPress: showComingSoon },
-    { label: 'Comunidad de hábitos', onPress: showComingSoon },
-    { label: 'Bitácora de emociones', onPress: showComingSoon },
-    { label: 'Zona de relajación', onPress: showComingSoon },
+    { label: 'Perfil', onPress: () => setShowProfileModal(true) },
+    { label: 'Comunidad de hábitos', onPress:  () => router.push('/(tabs)/habits') },
+    { label: 'Bitácora de emociones', onPress: () => router.push('/(tabs)/bitacora') },
+    { label: 'Zona de relajación', onPress: () => router.push('/zona-relajacion') },
     { label: 'Técnicas de Estudio', onPress: showComingSoon },
     { label: 'Ver planes', onPress: showComingSoon },
     { label: 'Configuraciones', onPress: showComingSoon },
@@ -42,10 +49,15 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => setDrawerVisible(true)}>
             <Ionicons name="menu" size={28} color="#333" />
           </TouchableOpacity>
+          {/**
+          <TouchableOpacity onPress={() => setShowProfileModal(true)}>
+            <Ionicons name="notifications-outline" size={28} color="#333" />
+          </TouchableOpacity>
+           */}
         </View>
 
         <Text style={styles.greeting}>Hola, {firstName}!</Text>
-        <Text style={styles.subGreeting}>describe tu día a Kii</Text>
+        <Text style={styles.subGreeting}>Describe tu día a Kii</Text>
         <View style={{ height: 30 }} />
 
         <Card
@@ -54,7 +66,7 @@ export default function HomeScreen() {
           buttonText="Iniciar respiración"
           iconName="leaf-outline"
           color="#4CAF50"
-          onPress={showComingSoon}
+          onPress={() => router.push('/zona-relajacion')}
         />
 
         <View style={{ height: 20 }} />
@@ -65,7 +77,7 @@ export default function HomeScreen() {
           buttonText="Registrar ánimo"
           iconName="happy-outline"
           color="#FF9800"
-          onPress={showComingSoon}
+          onPress={() => router.push('/bitacora')}
         />
 
         <View style={styles.motivation}>
@@ -76,29 +88,33 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => {}}>
-          <Ionicons name="home" size={26} color="#4CAF50" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="heart-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="add-circle-outline" size={30} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/racha')}>
-          <Ionicons name="paw-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showComingSoon}>
-          <Ionicons name="person-outline" size={26} color="#9E9E9E" />
-        </TouchableOpacity>
-      </View>
-
       <SideDrawer
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
         userName={fullName || firstName}
+        profileImage={profileImageUrl}
         menuItems={menuItems}
+      />
+
+      <ProfileCustomizationModal
+        visible={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onStart={() => {
+          setShowProfileModal(false);
+          setShowTypeSelector(true);
+        }}
+      />
+
+      <ProfileTypeSelector
+        visible={showTypeSelector}
+        onClose={() => setShowTypeSelector(false)}
+        onSelect={(type) => {
+          setShowTypeSelector(false);
+          router.push({
+            pathname: '/profile-setup',
+            params: { type },
+          });
+        }}
       />
     </SafeAreaView>
   );
@@ -107,7 +123,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#fff' },
   container: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
-  header: { flexDirection: 'row', justifyContent: 'flex-start', marginBottom: 30 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
   greeting: { fontSize: 28, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)' },
   subGreeting: { fontSize: 16, color: '#9E9E9E', marginTop: 4 },
   motivation: { alignItems: 'center', marginTop: 40 },

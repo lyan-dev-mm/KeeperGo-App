@@ -82,7 +82,7 @@ export class MotivationalMessageRepositoryImpl implements MotivationalMessageRep
   ): Promise<MotivationalMessageEntity[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs
-      .map((d) => ({ id: d.id, ...d.data() } as MotivationalMessageEntity))
+      .map((d) => ({ id: d.id, ...(d.data() as object) } as MotivationalMessageEntity))
       .filter((m) => !excludeIds.includes(m.id));
   }
 

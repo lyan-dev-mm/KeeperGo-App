@@ -7,11 +7,13 @@ import {
 } from '../../domain/usecases/mascota/RegisterActivityUseCase';
 import { UpdatePetNameUseCase } from '../../domain/usecases/mascota/UpdatePetNameUseCase';
 import { PetRepositoryImpl } from '../../data/repositories/mascota/PetRepositoryImpl';
+import { MilestoneRepositoryImpl } from '../../data/repositories/mascota/MilestoneRepositoryImpl';
 import { useAuth } from './useAuth';
 
 const repository = new PetRepositoryImpl();
+const milestoneRepository = new MilestoneRepositoryImpl();
 const getPetUseCase = new GetPetUseCase(repository);
-const registerActivityUseCase = new RegisterActivityUseCase(repository);
+const registerActivityUseCase = new RegisterActivityUseCase(repository, milestoneRepository);
 const updatePetNameUseCase = new UpdatePetNameUseCase(repository);
 
 export function usePet() {

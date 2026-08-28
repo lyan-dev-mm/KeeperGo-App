@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../hooks/useAuth';
 import { Validators } from '../../utils/validators';
-import { Colors } from '../../../constants/Colors';
+import { Colors } from '../../../constants/colors';
 
 export default function RegisterScreen() {
   const { register, isLoading, errorMessage } = useAuth();
@@ -44,8 +44,7 @@ export default function RegisterScreen() {
 
     const success = await register(email.trim(), password.trim(), name.trim());
     if (success) {
-      Alert.alert('Registro exitoso', 'Inicia sesión.');
-      router.replace('/(auth)/login');
+      router.replace('/ask-location');
     } else {
       Alert.alert('Error', errorMessage ?? 'Error inesperado');
     }
@@ -150,7 +149,7 @@ export default function RegisterScreen() {
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Regístrate</Text>
+          <Text style={styles.buttonText}>Siguiente</Text>
         )}
       </TouchableOpacity>
 
