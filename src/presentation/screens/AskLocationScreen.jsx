@@ -1,19 +1,15 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 export default function AskLocationScreen() {
   const handleAccept = () => {
-    Alert.alert(
-      'Próximamente',
-      'Muy pronto podrás guardar tu ubicación para recibir recomendaciones cercanas.'
-    );
-    router.replace('/register-location'); 
+    router.replace('/register-location');
   };
 
   const handleDecline = () => {
-    router.replace('/home')
+    router.replace('/home');
   };
 
   return (

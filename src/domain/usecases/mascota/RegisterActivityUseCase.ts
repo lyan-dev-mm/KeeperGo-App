@@ -1,11 +1,11 @@
 import { PetRepository } from '../../repositories/mascota/PetRepository';
 import { PetEntity } from '../../entities/mascota/Pet';
 import { GetPetUseCase } from './GetPetUseCase';
-import { GetMilestonesUseCase } from './GetMilestonesUseCase';
-import { MilestoneRepository } from '../../repositories/mascota/MilestoneRepository';
-import { MilestoneEntity } from '../../entities/mascota/Milestone';
 import { getTodayKey, getYesterdayKey } from '../../../utils/dateUtils';
 import { getXpRequiredForLevel } from '../../../utils/xpUtils';
+import { MilestoneRepository } from '../../repositories/mascota/MilestoneRepository';
+import { MilestoneEntity } from '../../entities/mascota/Milestone';
+import { GetMilestonesUseCase } from './GetMilestonesUseCase';
 
 const TEST_XP_REWARD = 50;
 
@@ -52,13 +52,18 @@ export class RegisterActivityUseCase {
       required = getXpRequiredForLevel(level);
     }
 
+    // Puntos de alimento: contador independiente del XP de nivel, usado
+    // para "alimentar" mascotas y hacerlas crecer. Se reinicia a 0 cada vez
+    // que el usuario alimenta a alguna mascota (ver FeedPetUseCase).
+    const feedingPoints = (pet.feedingPoints ?? 0) + TEST_XP_REWARD;
+
     let unlockedMilestone: MilestoneEntity | null = null;
     try {
       const milestones = await this.getMilestonesUseCase.execute();
       unlockedMilestone = milestones.find((m) => previousBest < m.days && newBest >= m.days) ?? null;
     } catch {
-      // Si falla la carga de hitos desde Firestore, no bloqueamos el registro
-      // de actividad — simplemente no se detecta el desbloqueo esa vez.
+      // Silencioso: si falla la carga de hitos, no se detecta el
+      // desbloqueo esa vez, pero el resto del registro sigue funcionando.
     }
 
     const updated: PetEntity = {
@@ -69,6 +74,7 @@ export class RegisterActivityUseCase {
       lastActivityDate: todayKey,
       level,
       currentXP,
+      feedingPoints,
       updatedAt: new Date().toISOString(),
     };
 

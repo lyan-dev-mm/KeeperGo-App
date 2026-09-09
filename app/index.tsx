@@ -13,7 +13,15 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={user ? '/(tabs)/home' : '/(auth)/login'} />;
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  if (!user.emailVerified) {
+    return <Redirect href="/verify-email" />;
+  }
+
+  return <Redirect href="/(tabs)/home" />;
 }
 
 const styles = StyleSheet.create({

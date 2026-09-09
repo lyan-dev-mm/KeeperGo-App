@@ -8,47 +8,57 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  Switch,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdminUsers } from '../hooks/useAdminUsers';
+import { useAuth } from '../hooks/useAuth';
 import { isAdminEmail } from '../../utils/adminUtils';
 import { AdminUserSummary } from '../../domain/entities/admin/AdminUserSummary';
+import { usePetOptions } from '../hooks/usePetOptions';
+import { getTodayKey } from '../../utils/dateUtils';
 
 export default function AdminUsersScreen() {
-  const { users, isLoading, updateUserPet } = useAdminUsers();
+  const { user: currentAdmin } = useAuth();
+  const { petOptions } = usePetOptions();
+  const { users, isLoading, updateUserPet, setUserDisabled, deleteUserData } = useAdminUsers();
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<AdminUserSummary | null>(null);
   const [formStreak, setFormStreak] = useState('');
   const [formBestStreak, setFormBestStreak] = useState('');
   const [formLevel, setFormLevel] = useState('');
   const [formXP, setFormXP] = useState('');
+  const [formUnlockedPets, setFormUnlockedPets] = useState<string[]>([]);
+  const [formDisabled, setFormDisabled] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const hasPet = (u: AdminUserSummary) => u.petName !== undefined;
+  const isEditingSelf = editingUser?.uid === currentAdmin?.id;
 
   const filteredUsers = users.filter((u) =>
     u.email.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
 
   const openEditModal = (u: AdminUserSummary) => {
-    if (!hasPet(u)) {
-      Alert.alert(
-        'Sin mascota creada',
-        `${u.email} todavía no ha abierto la pantalla de Mascota Virtual, así que no tiene datos de racha que editar.`
-      );
-      return;
-    }
     setEditingUser(u);
     setFormStreak(String(u.currentStreak ?? 0));
     setFormBestStreak(String(u.bestStreak ?? 0));
     setFormLevel(String(u.level ?? 1));
     setFormXP('0');
+    setFormUnlockedPets(u.unlockedPetIds ?? []);
+    setFormDisabled(u.disabled ?? false);
   };
 
   const closeModal = () => setEditingUser(null);
+
+  const togglePetUnlock = (petId: string) => {
+    setFormUnlockedPets((prev) =>
+      prev.includes(petId) ? prev.filter((id) => id !== petId) : [...prev, petId]
+    );
+  };
 
   const parseNonNegativeInt = (value: string, fallback: number): number => {
     const parsed = parseInt(value, 10);
@@ -66,13 +76,53 @@ export default function AdminUsersScreen() {
 
     setIsSaving(true);
     try {
-      await updateUserPet(editingUser.uid, { currentStreak, bestStreak, level, currentXP });
+      if (hasPet(editingUser)) {
+        await updateUserPet(editingUser.uid, {
+          currentStreak,
+          bestStreak,
+          level,
+          currentXP,
+          lastActivityDate: getTodayKey(),
+          unlockedPetIds: formUnlockedPets,
+        });
+      }
+
+      if (!isEditingSelf && formDisabled !== (editingUser.disabled ?? false)) {
+        await setUserDisabled(editingUser.uid, formDisabled);
+      }
+
       closeModal();
     } catch {
-      Alert.alert('Error', 'No se pudo actualizar la racha de este usuario.');
+      Alert.alert('Error', 'No se pudo actualizar la información de este usuario.');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleDeleteData = () => {
+    if (!editingUser) return;
+    Alert.alert(
+      'Eliminar datos del usuario',
+      `Esto borrará permanentemente el perfil, la racha y la mascota de ${editingUser.email}. Su cuenta de acceso (correo/contraseña) NO se elimina — solo sus datos dentro de la app. Esta acción no se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar datos',
+          style: 'destructive',
+          onPress: async () => {
+            setIsSaving(true);
+            try {
+              await deleteUserData(editingUser.uid);
+              closeModal();
+            } catch {
+              Alert.alert('Error', 'No se pudieron eliminar los datos de este usuario.');
+            } finally {
+              setIsSaving(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -117,11 +167,18 @@ export default function AdminUsersScreen() {
             <TouchableOpacity key={u.uid} style={styles.userCard} onPress={() => openEditModal(u)}>
               <View style={styles.userHeader}>
                 <Text style={styles.userName}>{u.name || u.email}</Text>
-                {isAdminEmail(u.email) && (
-                  <View style={styles.adminBadge}>
-                    <Text style={styles.adminBadgeText}>Admin</Text>
-                  </View>
-                )}
+                <View style={styles.badgeRow}>
+                  {u.disabled && (
+                    <View style={styles.disabledBadge}>
+                      <Text style={styles.disabledBadgeText}>Deshabilitado</Text>
+                    </View>
+                  )}
+                  {isAdminEmail(u.email) && (
+                    <View style={styles.adminBadge}>
+                      <Text style={styles.adminBadgeText}>Admin</Text>
+                    </View>
+                  )}
+                </View>
               </View>
               <Text style={styles.userEmail}>{u.email}</Text>
               {hasPet(u) ? (
@@ -133,18 +190,17 @@ export default function AdminUsersScreen() {
               ) : (
                 <Text style={styles.noPetText}>Sin mascota creada todavía</Text>
               )}
-              {hasPet(u) && (
-                <View style={styles.editHint}>
-                  <Ionicons name="create-outline" size={14} color="#4CAF50" />
-                  <Text style={styles.editHintText}>Toca para editar</Text>
-                </View>
-              )}
+              <View style={styles.editHint}>
+                <Ionicons name="create-outline" size={14} color="#4CAF50" />
+                <Text style={styles.editHintText}>Toca para editar</Text>
+              </View>
             </TouchableOpacity>
           ))}
 
           {users.length === 0 && (
             <Text style={styles.emptyText}>
-              No hay usuarios registrados todavía (solo aparecen cuentas creadas después de este cambio).
+              No hay usuarios registrados todavía. Si tú mismo no apareces aquí, cierra sesión y
+              vuelve a entrar una vez — tu perfil se creará automáticamente.
             </Text>
           )}
 
@@ -156,59 +212,126 @@ export default function AdminUsersScreen() {
 
       <Modal visible={editingUser !== null} transparent animationType="slide" onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Editar racha</Text>
-            <Text style={styles.modalSubtitle}>{editingUser?.email}</Text>
+          <ScrollView style={styles.modalScroll}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Editar usuario</Text>
+              <Text style={styles.modalSubtitle}>{editingUser?.email}</Text>
 
-            <Text style={styles.fieldLabel}>Racha actual</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={formStreak}
-              onChangeText={setFormStreak}
-              keyboardType="numeric"
-              placeholder="0"
-            />
+              {isEditingSelf && (
+                <View style={styles.selfWarning}>
+                  <Ionicons name="information-circle-outline" size={16} color="#F57C00" />
+                  <Text style={styles.selfWarningText}>
+                    Estás editando tu propia cuenta — no puedes deshabilitarte ni eliminar tus
+                    propios datos desde aquí.
+                  </Text>
+                </View>
+              )}
 
-            <Text style={styles.fieldLabel}>Mejor racha (récord)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={formBestStreak}
-              onChangeText={setFormBestStreak}
-              keyboardType="numeric"
-              placeholder="0"
-            />
+              {editingUser && hasPet(editingUser) && (
+                <>
+                  <Text style={styles.fieldLabel}>Racha actual</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={formStreak}
+                    onChangeText={setFormStreak}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
 
-            <Text style={styles.fieldLabel}>Nivel</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={formLevel}
-              onChangeText={setFormLevel}
-              keyboardType="numeric"
-              placeholder="1"
-            />
+                  <Text style={styles.fieldLabel}>Mejor racha (récord)</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={formBestStreak}
+                    onChangeText={setFormBestStreak}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
 
-            <Text style={styles.fieldLabel}>XP actual (dentro del nivel)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={formXP}
-              onChangeText={setFormXP}
-              keyboardType="numeric"
-              placeholder="0"
-            />
+                  <Text style={styles.fieldLabel}>Nivel</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={formLevel}
+                    onChangeText={setFormLevel}
+                    keyboardType="numeric"
+                    placeholder="1"
+                  />
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Guardar</Text>
-                )}
-              </TouchableOpacity>
+                  <Text style={styles.fieldLabel}>XP actual (dentro del nivel)</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={formXP}
+                    onChangeText={setFormXP}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+
+                  <Text style={styles.sectionLabel}>Mascotas desbloqueadas manualmente</Text>
+                  <Text style={styles.sectionHint}>
+                    Independiente de su racha real — útil para dar una mascota como premio o para
+                    pruebas.
+                  </Text>
+                  <View style={styles.petGrid}>
+                    {petOptions.map((option) => {
+                      const isChecked = formUnlockedPets.includes(option.id);
+                      return (
+                        <TouchableOpacity
+                          key={option.id}
+                          style={[styles.petChip, isChecked && styles.petChipActive]}
+                          onPress={() => togglePetUnlock(option.id)}
+                        >
+                          <Text style={styles.petChipEmoji}>{option.emoji}</Text>
+                          <Text style={[styles.petChipLabel, isChecked && styles.petChipLabelActive]}>
+                            {option.name}
+                          </Text>
+                          {isChecked && (
+                            <Ionicons name="checkmark-circle" size={14} color="#4CAF50" style={{ marginLeft: 4 }} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+
+              <View style={styles.disabledRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sectionLabel}>Cuenta deshabilitada</Text>
+                  <Text style={styles.sectionHint}>Bloquea su acceso a la app por completo.</Text>
+                </View>
+                <Switch
+                  value={formDisabled}
+                  onValueChange={setFormDisabled}
+                  disabled={isEditingSelf}
+                  trackColor={{ false: '#ccc', true: '#EF9A9A' }}
+                  thumbColor={formDisabled ? '#E53935' : '#f4f3f4'}
+                />
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
+                  {isSaving ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Guardar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {!isEditingSelf && (
+                <TouchableOpacity
+                  style={styles.deleteDataButton}
+                  onPress={handleDeleteData}
+                  disabled={isSaving}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#E53935" />
+                  <Text style={styles.deleteDataButtonText}>Eliminar datos del usuario</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -250,8 +373,11 @@ const styles = StyleSheet.create({
   },
   userHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   userName: { fontSize: 15, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)' },
-  adminBadge: { backgroundColor: '#4CAF50', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeRow: { flexDirection: 'row' },
+  adminBadge: { backgroundColor: '#4CAF50', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 6 },
   adminBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  disabledBadge: { backgroundColor: '#E53935', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  disabledBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
   userEmail: { fontSize: 12, color: '#9E9E9E', marginTop: 2 },
   userStatsRow: { flexDirection: 'row', marginTop: 8 },
   userStat: { fontSize: 12, color: '#4CAF50', fontWeight: '600', marginRight: 14 },
@@ -260,9 +386,19 @@ const styles = StyleSheet.create({
   editHintText: { fontSize: 11, color: '#4CAF50', marginLeft: 4 },
   emptyText: { textAlign: 'center', color: '#9E9E9E', marginTop: 30, paddingHorizontal: 20 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalScroll: { maxHeight: '88%' },
   modalCard: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
   modalTitle: { fontSize: 17, fontWeight: 'bold' },
   modalSubtitle: { fontSize: 12, color: '#9E9E9E', marginBottom: 14 },
+  selfWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+  },
+  selfWarningText: { flex: 1, fontSize: 11, color: '#E65100', marginLeft: 6 },
   fieldLabel: { fontSize: 12, color: '#9E9E9E', marginTop: 10, marginBottom: 4 },
   modalInput: {
     borderWidth: 1,
@@ -271,9 +407,35 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
   },
+  sectionLabel: { fontSize: 13, fontWeight: 'bold', color: 'rgba(0,0,0,0.8)', marginTop: 18 },
+  sectionHint: { fontSize: 11, color: '#9E9E9E', marginTop: 2, marginBottom: 10 },
+  petGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  petChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  petChipActive: { backgroundColor: '#E3F2DA' },
+  petChipEmoji: { fontSize: 14, marginRight: 4 },
+  petChipLabel: { fontSize: 12, color: '#9E9E9E', fontWeight: '600' },
+  petChipLabelActive: { color: '#2E7D32' },
+  disabledRow: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 20 },
   cancelButton: { paddingVertical: 10, paddingHorizontal: 14 },
   cancelButtonText: { color: '#9E9E9E', fontWeight: '600', fontSize: 13 },
   saveButton: { backgroundColor: '#4CAF50', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20 },
   saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+  deleteDataButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+  },
+  deleteDataButtonText: { color: '#E53935', fontWeight: '600', fontSize: 13, marginLeft: 6 },
 });

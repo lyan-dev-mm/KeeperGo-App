@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 
 import * as Location from 'expo-location';
+import { router } from 'expo-router';
+import LocationMap from '../components/LocationMap';
 
 export default function RegisterLocation() {
   const [modalVisible, setModalVisible] = useState(true);
   const [markerCoordinate, setMarkerCoordinate] = useState(null);
-  
+
   const mapRef = useRef(null);
 
   const initialRegion = {
@@ -199,14 +201,21 @@ export default function RegisterLocation() {
 
   // --- NUEVA FUNCIÓN PARA GUARDAR ---
   const handleConfirmLocation = () => {
-    if (!markerCoordinate) {
-      Alert.alert(
-        '¡Ubicación Guardada!',
-        `Latitud: ${markerCoordinate.latitude.toFixed(4)}\nLongitud: ${markerCoordinate.longitude.toFixed(4)}`,
-        [{ text: 'Excelente' }]
-      );
-    }
-  };
+      if (markerCoordinate) {
+        console.log('Coordenadas guardadas:', markerCoordinate);
+
+        Alert.alert(
+          '¡Ubicación Guardada!',
+          'Tu ubicación se ha registrado correctamente. Ya puedes encontrar apoyo cerca de ti.',
+          [
+            {
+              text: 'Ir al Inicio',
+              onPress: () => router.replace('/(tabs)/home')
+            }
+          ]
+        );
+      }
+    };
 
   return (
     <View style={styles.container}>

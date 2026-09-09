@@ -8,6 +8,10 @@ export interface PetEntity {
   bestStreak: number;
   activeDates: string[];
   lastActivityDate: string | null;
+  selectedPetId: string;
+  unlockedPetIds: string[];
+  feedingPoints: number;
+  petGrowth: Record<string, number>;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +28,10 @@ export function createDefaultPet(userId: string): PetEntity {
     bestStreak: 0,
     activeDates: [],
     lastActivityDate: null,
+    selectedPetId: '',
+    unlockedPetIds: [],
+    feedingPoints: 0,
+    petGrowth: {},
     createdAt: now,
     updatedAt: now,
   };

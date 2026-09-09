@@ -11,10 +11,12 @@ interface AuthContextType {
   isLoading: boolean;
   isInitializing: boolean;
   errorMessage: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, fullName?: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<UserEntity | null>;
+  register: (email: string, password: string, fullName?: string) => Promise<UserEntity | null>;
   logout: () => Promise<void>;
   clearError: () => void;
+  sendVerificationEmail: () => Promise<void>;
+  refreshUser: () => Promise<UserEntity | null>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,14 +32,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log('🔥 onAuthStateChanged disparado. Usuario:', firebaseUser?.email ?? 'NINGUNO');
-
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        try {
+          const disabled = await repository.isAccountDisabled(firebaseUser.uid);
+          if (disabled) {
+            await repository.logout();
+            setUser(null);
+            setIsInitializing(false);
+            return;
+          }
+        } catch {
+          // Si falla la verificación por red, dejamos pasar para no
+          // bloquear al usuario por un error temporal de conexión.
+        }
+
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email ?? '',
           name: firebaseUser.displayName ?? '',
+          emailVerified: firebaseUser.emailVerified,
         });
       } else {
         setUser(null);
@@ -48,18 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<UserEntity | null> => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
       const result = await loginUseCase.execute(email, password);
       setUser(result);
       setIsLoading(false);
-      return result != null;
+      return result;
     } catch (error) {
       setErrorMessage((error as Error).message);
       setIsLoading(false);
-      return false;
+      return null;
     }
   };
 
@@ -67,18 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     fullName?: string
-  ): Promise<boolean> => {
+  ): Promise<UserEntity | null> => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
       const result = await registerUseCase.execute(email, password, fullName);
       setUser(result);
       setIsLoading(false);
-      return result != null;
+      return result;
     } catch (error) {
       setErrorMessage((error as Error).message);
       setIsLoading(false);
-      return false;
+      return null;
     }
   };
 
@@ -89,9 +103,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearError = () => setErrorMessage(null);
 
+  const sendVerificationEmail = async (): Promise<void> => {
+    await repository.sendVerificationEmail();
+  };
+
+  const refreshUser = async (): Promise<UserEntity | null> => {
+    const result = await repository.reloadCurrentUser();
+    setUser(result);
+    return result;
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isInitializing, errorMessage, login, register, logout, clearError }}
+      value={{
+        user,
+        isLoading,
+        isInitializing,
+        errorMessage,
+        login,
+        register,
+        logout,
+        clearError,
+        sendVerificationEmail,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

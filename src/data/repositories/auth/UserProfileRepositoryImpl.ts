@@ -11,7 +11,7 @@ export class UserProfileRepositoryImpl implements UserProfileRepository {
       ...profile,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }, { merge: true });
+    });
   }
 
   async getUserProfile(uid: string): Promise<UserProfileEntity | null> {
