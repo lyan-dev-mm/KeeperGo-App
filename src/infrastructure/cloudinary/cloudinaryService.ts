@@ -32,11 +32,15 @@ export async function uploadImageToCloudinary(
 
   const formData = new FormData();
 
-  formData.append('file', {
+  // En React Native, para subir archivos no debemos usar 'as unknown as Blob'
+  // sino pasar el objeto con uri, type y name directamente.
+  const fileToUpload = {
     uri: asset.uri,
-    name: asset.fileName ?? `keepergo_${Date.now()}.jpg`,
-    type: asset.mimeType ?? 'image/jpeg',
-  } as unknown as Blob);
+    type: asset.mimeType || 'image/jpeg',
+    name: asset.fileName || `upload_${Date.now()}.jpg`,
+  };
+
+  formData.append('file', fileToUpload as any);
 
   formData.append('upload_preset', uploadPreset);
 

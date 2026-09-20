@@ -15,11 +15,13 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../hooks/useAuth';
 import { Validators } from '../../utils/validators';
-import { Colors } from '../../../constants/colors';
+import { Colors } from '../../../constants/Colors';
 
 export default function RegisterScreen() {
   const { register, isLoading, errorMessage } = useAuth();
-  const [name, setName] = useState('');
+  const [nombres, setNombres] = useState('');
+  const [primerApellido, setPrimerApellido] = useState('');
+  const [segundoApellido, setSegundoApellido] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -29,20 +31,34 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<Record<string, string | null>>({});
 
   const handleRegister = async () => {
-    const nameErr = name.trim().length < 2 ? 'Ingresa al menos 2 caracteres' : null;
+    const nombresErr = !nombres.trim() ? 'Ingresa tus nombres' : null;
+    const primerErr = !primerApellido.trim() ? 'Ingresa tu primer apellido' : null;
+    const segundoErr = !segundoApellido.trim() ? 'Ingresa tu segundo apellido' : null;
     const emailErr = Validators.validateEmail(email);
     const passErr = Validators.validatePassword(password);
     const confirmErr = Validators.validateConfirmPassword(confirm, password);
-    setErrors({ name: nameErr, email: emailErr, password: passErr, confirm: confirmErr });
 
-    if (nameErr || emailErr || passErr || confirmErr) return;
+    setErrors({
+      nombres: nombresErr,
+      primerApellido: primerErr,
+      segundoApellido: segundoErr,
+      email: emailErr,
+      password: passErr,
+      confirm: confirmErr,
+    });
+
+    if (nombresErr || primerErr || segundoErr || emailErr || passErr || confirmErr) return;
 
     if (!acceptTerms) {
       Alert.alert('Error', 'Debes aceptar los Términos y Condiciones');
       return;
     }
 
-    const success = await register(email.trim(), password.trim(), name.trim());
+    const success = await register(email.trim(), password.trim(), {
+      nombres: nombres.trim(),
+      primerApellido: primerApellido.trim(),
+      segundoApellido: segundoApellido.trim(),
+    });
     if (success) {
       router.replace('/ask-location');
     } else {
@@ -55,8 +71,33 @@ export default function RegisterScreen() {
       <Text style={styles.header}>Crear cuenta</Text>
 
       <View style={styles.fieldGroup}>
-        <TextInput style={styles.input} placeholder="Nombre completo" value={name} onChangeText={setName} />
-        {errors.name && <Text style={styles.error}>{errors.name}</Text>}
+        <TextInput
+          style={styles.input}
+          placeholder="Nombres"
+          value={nombres}
+          onChangeText={setNombres}
+        />
+        {errors.nombres && <Text style={styles.error}>{errors.nombres}</Text>}
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <TextInput
+          style={styles.input}
+          placeholder="Primer Apellido"
+          value={primerApellido}
+          onChangeText={setPrimerApellido}
+        />
+        {errors.primerApellido && <Text style={styles.error}>{errors.primerApellido}</Text>}
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <TextInput
+          style={styles.input}
+          placeholder="Segundo Apellido"
+          value={segundoApellido}
+          onChangeText={setSegundoApellido}
+        />
+        {errors.segundoApellido && <Text style={styles.error}>{errors.segundoApellido}</Text>}
       </View>
 
       <View style={styles.fieldGroup}>

@@ -1,87 +1,115 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const fetch = require('node-fetch');
 
 admin.initializeApp();
 
 /**
- * Verifica si una persona tiene cédula profesional registrada mediante su CURP usando Kiban API.
+ * Integración con Hume AI (Fase 2).
+ * Analiza el sentimiento de un texto de forma sincrónica y guarda el resultado emocional.
  */
-exports.verifyProfessionalLicense = functions.https.onCall(async (data, context) => {
+exports.analyzeEmotion = functions.https.onCall(async (data, context) => {
   // 1. Verificar autenticación
   if (!context.auth) {
-    throw new functions.https.HttpsError(
-      'unauthenticated',
-      'El usuario debe estar autenticado para realizar esta acción.'
-    );
+    throw new functions.https.HttpsError('unauthenticated', 'Debe estar autenticado.');
   }
 
-  const { curp } = data;
-
-  // 2. Validar CURP (básico)
-  if (!curp || curp.length !== 18) {
-    throw new functions.https.HttpsError(
-      'invalid-argument',
-      'Se requiere una CURP válida de 18 caracteres.'
-    );
+  const { text } = data;
+  if (!text || typeof text !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Se requiere un texto válido.');
   }
 
-  const kibanApiKey = process.env.KIBAN_API_KEY; // Se debe configurar en Firebase Env
-  if (!kibanApiKey) {
-    console.error('KIBAN_API_KEY no configurada en el servidor.');
-    throw new functions.https.HttpsError(
-      'internal',
-      'Error de configuración del servidor.'
-    );
+  // 2. Obtener credenciales de forma segura
+  const humeApiKey = process.env.HUME_API_KEY;
+  if (!humeApiKey) {
+    console.error('HUME_API_KEY no configurada en el servidor.');
+    throw new functions.https.HttpsError('internal', 'Error de configuración del servidor.');
   }
 
   try {
-    // 3. Llamada a Kiban API
-    const response = await fetch('https://api.link.kiban.com/api/v2/sep_cedula/validate_by_curp', {
+    // 3. Llamada sincrónica a Hume AI Language API
+    const response = await fetch('https://api.hume.ai/v0/language/predictions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${kibanApiKey}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'X-Hume-Api-Key': humeApiKey,
       },
-      body: JSON.stringify({ curp: curp.toUpperCase() }),
+      body: JSON.stringify({
+        text: [text],
+        models: {
+          language: { granularity: 'sentence' },
+        },
+      }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      // Sanitizar error para no exponer llaves ni texto en logs
+      console.error('Error de Hume AI API (Status:', response.status, ')');
+      throw new Error('Error en el servicio de análisis emocional.');
+    }
 
     const result = await response.json();
 
-    // 4. Determinar si se encontró la cédula
-    // Basado en investigación: FOUND o si el array de resultados no está vacío
-    let isVerified = false;
-    if (response.ok && result) {
-      // Kiban puede devolver un objeto con status o un array directamente
-      if (result.status === 'FOUND') {
-        isVerified = true;
-      } else if (Array.isArray(result) && result.length > 0) {
-        isVerified = true;
-      } else if (result.response && result.response.status === 'FOUND') {
-        isVerified = true;
+    // 4. Procesar emociones (Top 5 y Dominante)
+    // Estructura esperada: result[0].predictions[0].models.language.grouped_predictions[0].predictions[0].emotions
+    let emotions = [];
+    try {
+      const languagePredictions = result[0]?.predictions?.[0]?.models?.language?.grouped_predictions?.[0]?.predictions?.[0]?.emotions;
+      if (Array.isArray(languagePredictions)) {
+        emotions = languagePredictions
+          .map(e => ({ name: e.name, score: e.score }))
+          .sort((a, b) => b.score - a.score);
       }
+    } catch (parseError) {
+      console.error('Error al procesar el formato de respuesta de Hume.');
     }
 
-    // 5. Actualizar Firestore
-    const uid = context.auth.uid;
-    const userRef = admin.firestore().collection('users').doc(uid);
+    const topEmotions = emotions.slice(0, 5);
+    const dominantEmotion = topEmotions.length > 0 ? topEmotions[0].name : 'unknown';
 
-    const updateData = {
-      professionalVerified: isVerified,
-      professionalVerificationDate: admin.firestore.FieldValue.serverTimestamp(),
-      curp: curp.toUpperCase(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    // 5. Guardar en Firestore (Estructura estricta de 4 campos)
+    const uid = context.auth.uid;
+    const logRef = admin.firestore().collection('users').doc(uid).collection('emotion_logs').doc();
+
+    const logEntry = {
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      top_emotions: topEmotions,
+      dominant_emotion: dominantEmotion,
+      status: emotions.length > 0 ? 'success' : 'error'
     };
 
-    await userRef.set(updateData, { merge: true });
+    await logRef.set(logEntry);
 
-    return { success: true, verified: isVerified };
+    // 6. Retornar solo lo necesario al cliente
+    return {
+      success: true,
+      dominant_emotion: dominantEmotion,
+      top_emotions: topEmotions
+    };
+
   } catch (error) {
-    console.error('Error al verificar cédula en Kiban:', error);
-    throw new functions.https.HttpsError(
-      'internal',
-      'Ocurrió un error al comunicarse con el servicio de verificación.'
-    );
+    // Sanitizar log de error: no imprimir 'text' ni 'humeApiKey'
+    console.error('Error en analyzeEmotion (Backend):', error.message);
+    throw new functions.https.HttpsError('internal', 'No se pudo procesar el análisis emocional.');
   }
+});
+
+/**
+ * Placeholder para la integración con OpenAI (Fase 3).
+ * Esta función manejará la conversación de forma segura en el backend.
+ */
+exports.chatWithAI = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Debe estar autenticado.');
+  }
+
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+
+  if (!openaiApiKey) {
+    console.error('Credencial de OpenAI no configurada.');
+    throw new functions.https.HttpsError('internal', 'Error de configuración del servidor.');
+  }
+
+  // TODO: Implementar lógica de OpenAI en la Fase 3
+  return { message: 'Servicio de OpenAI preparado.' };
 });

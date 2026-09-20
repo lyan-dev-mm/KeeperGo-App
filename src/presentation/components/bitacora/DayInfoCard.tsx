@@ -2,7 +2,7 @@
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, ENERGY_COLORS } from '../../../../constants/colors';
+import { COLORS, ENERGY_COLORS } from '../../../../constants/Colors';
 import { Emocion } from '../../../domain/entities/bitacora/Emocion';
 import { RegistroAnimo } from '../../../domain/entities/bitacora/RegistroAnimo'
 

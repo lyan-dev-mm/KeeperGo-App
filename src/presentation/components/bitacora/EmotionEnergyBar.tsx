@@ -1,7 +1,7 @@
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { COLORS, ENERGY_COLORS } from '../../../../constants/colors';
+import { COLORS, ENERGY_COLORS } from '../../../../constants/Colors';
 
 const { width } = Dimensions.get('window');
 

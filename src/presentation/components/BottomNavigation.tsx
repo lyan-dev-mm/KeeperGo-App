@@ -3,7 +3,7 @@ import React, { JSX } from 'react';
 import { View, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
-import { COLORS } from '../../../constants/colors';
+import { COLORS } from '../../../constants/Colors';
 
 export interface BottomNavigationProps {
   activeTab?: 'home' | 'bitacora' | 'racha' | 'profile';

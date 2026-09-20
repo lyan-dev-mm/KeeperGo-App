@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SPECIALISTS } from '../../../constants/Specialists';
-import { Colors } from '../../../constants/colors';
+import { Colors } from '../../../constants/Colors';
 import MapComponent from '../components/MapComponent';
 
 export default function SpecialistsScreen() {

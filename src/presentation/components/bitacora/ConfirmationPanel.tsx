@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ImageSourcePropType
 } from 'react-native';
-import { COLORS } from '../../../../constants/colors';
+import { COLORS } from '../../../../constants/Colors';
 
   export interface EmotionData {
   id: string;

@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../../../constants/colors';
+import { COLORS } from '../../../../constants/Colors';
 import { useRelajacionStore } from '../../store/relajacionStore';
 
 import BolitaRespiracion from '../../components/relajacion/BolitaRespiracion';

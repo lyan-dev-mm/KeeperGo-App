@@ -21,8 +21,18 @@ export default function HomeScreen() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
 
-  const fullName = profile?.generalInfo?.username || profile?.professionalInfo?.professionalName || profile?.institutionInfo?.institutionName || user?.name || '';
-  const firstName = fullName.split(' ')[0] || user?.email?.split('@')[0] || 'Usuario';
+  const fullName = profile?.generalInfo
+    ? `${profile.generalInfo.nombres} ${profile.generalInfo.primerApellido} ${profile.generalInfo.segundoApellido}`.trim()
+    : profile?.professionalInfo?.professionalName ||
+      profile?.institutionInfo?.institutionName ||
+      (user?.nombres
+        ? `${user.nombres} ${user.primerApellido} ${user.segundoApellido}`.trim()
+        : '');
+  const firstName =
+    profile?.generalInfo?.nombres?.split(' ')[0] ||
+    user?.nombres?.split(' ')[0] ||
+    user?.email?.split('@')[0] ||
+    'Usuario';
   const profileImageUrl = profile?.profileImage?.url;
 
   const menuItems: DrawerMenuItem[] = [

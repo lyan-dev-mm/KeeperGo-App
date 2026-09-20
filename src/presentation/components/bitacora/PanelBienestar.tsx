@@ -10,7 +10,7 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
-import { COLORS } from '../../../../constants/colors';
+import { COLORS } from '../../../../constants/Colors';
 import { router } from 'expo-router';
 
 export type NivelAlerta = 'bajo' | 'medio' | 'alto';

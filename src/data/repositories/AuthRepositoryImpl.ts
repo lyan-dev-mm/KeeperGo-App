@@ -36,40 +36,55 @@ export class AuthRepositoryImpl implements AuthRepository {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const user = result.user;
+      // Nota: Aquí los nombres se recuperarían idealmente de Firestore en un flujo real,
+      // por ahora devolvemos la estructura pero con datos vacíos o parciales si no se consultan.
       return {
         id: user.uid,
         email: user.email ?? '',
-        name: user.displayName ?? '',
+        nombres: user.displayName ?? '',
+        primerApellido: '',
+        segundoApellido: '',
       };
     } catch (error) {
       throw new Error(handleFirebaseError(error as AuthError));
     }
   }
 
-  async register(email: string, password: string, fullName?: string): Promise<UserEntity | null> {
+  async register(
+    email: string,
+    password: string,
+    names: { nombres: string; primerApellido: string; segundoApellido: string }
+  ): Promise<UserEntity | null> {
     try {
+      const { nombres, primerApellido, segundoApellido } = names;
+      const fullName = `${nombres} ${primerApellido} ${segundoApellido}`.trim();
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      if (fullName) {
-        await updateProfile(result.user, { displayName: fullName });
-      }
 
-      // Crea también el documento de perfil en Firestore (colección "users"),
+      await updateProfile(result.user, { displayName: fullName });
+
+      // Crea también el documento de perfil en Firestore (colección "userProfiles"),
       // necesario para que el panel de administración pueda listar usuarios.
       try {
         await userProfileRepository.createUserProfile({
           uid: result.user.uid,
           email: result.user.email ?? '',
-          name: fullName ?? '',
+          profileType: 'normal',
+          generalInfo: {
+            nombres,
+            primerApellido,
+            segundoApellido,
+          },
         });
-      } catch {
-        // Si falla la creación del perfil, no bloqueamos el registro del
-        // usuario — la cuenta de autenticación ya se creó correctamente.
+      } catch (err) {
+        console.error('Error al crear userProfile:', err);
       }
 
       return {
         id: result.user.uid,
         email: result.user.email ?? '',
-        name: fullName ?? '',
+        nombres,
+        primerApellido,
+        segundoApellido,
       };
     } catch (error) {
       throw new Error(handleFirebaseError(error as AuthError));

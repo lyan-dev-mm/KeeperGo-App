@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../../../constants/colors';
+import { Colors } from '../../../../constants/Colors';
 import { pickAndUploadImageToCloudinary } from '../../../infrastructure/cloudinary/cloudinaryUploadService';
+import { CustomToast, ToastType } from '../common/CustomToast';
+
+const SUPPORTED_FORMATS = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
 interface NormalProfileFormProps {
   onBack: () => void;
@@ -10,16 +13,31 @@ interface NormalProfileFormProps {
 }
 
 export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) {
-  const [username, setUsername] = useState('');
+  const [nombres, setNombres] = useState('');
+  const [primerApellido, setPrimerApellido] = useState('');
+  const [segundoApellido, setSegundoApellido] = useState('');
   const [bio, setBio] = useState('');
   const [phone, setPhone] = useState('');
   const [photo, setPhoto] = useState<{ url: string; publicId: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Estado para el Toast
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
+    visible: false,
+    message: '',
+    type: 'info',
+  });
+
+  const showToast = (message: string, type: ToastType) => {
+    setToast({ visible: true, message, type });
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!username.trim()) newErrors.username = 'El nombre de usuario es obligatorio';
+    if (!nombres.trim()) newErrors.nombres = 'El nombre es obligatorio';
+    if (!primerApellido.trim()) newErrors.primerApellido = 'El primer apellido es obligatorio';
+    if (!segundoApellido.trim()) newErrors.segundoApellido = 'El segundo apellido es obligatorio';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -30,7 +48,9 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
         profileType: 'normal',
         phone: phone || undefined,
         generalInfo: {
-          username,
+          nombres,
+          primerApellido,
+          segundoApellido,
           shortDescription: bio
         },
         profileImage: photo
@@ -41,16 +61,41 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
   const pickImage = async () => {
     try {
       setIsUploading(true);
-      const uploadedImage = await pickAndUploadImageToCloudinary();
+
+      // Importamos el servicio de selección para validar el formato antes de subir
+      const { pickImageFromLibrary } = require('../../../infrastructure/media/imagePickerService');
+      const selectedImage = await pickImageFromLibrary();
+
+      if (!selectedImage) {
+        setIsUploading(false);
+        return;
+      }
+
+      // VALIDACIÓN DE FORMATO
+      const mimeType = selectedImage.mimeType || '';
+      if (!SUPPORTED_FORMATS.includes(mimeType.toLowerCase())) {
+        showToast('Formato de imagen no soportado. Usa JPG, PNG o WEBP.', 'error');
+        setIsUploading(false);
+        return;
+      }
+
+      // Si el formato es correcto, procedemos a subir a Cloudinary
+      const { uploadImageToCloudinary } = require('../../../infrastructure/cloudinary/cloudinaryService');
+      const uploadedImage = await uploadImageToCloudinary({
+        uri: selectedImage.uri,
+        fileName: selectedImage.fileName,
+        mimeType: selectedImage.mimeType,
+      });
 
       if (uploadedImage) {
         setPhoto({
           url: uploadedImage.secure_url,
           publicId: uploadedImage.public_id
         });
+        showToast('Imagen actualizada con éxito', 'success');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo subir la imagen');
+      showToast(error.message || 'No se pudo subir la imagen', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -78,15 +123,36 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Nombre de usuario *</Text>
+        <Text style={styles.label}>Nombres *</Text>
         <TextInput
-          style={[styles.input, errors.username && styles.inputError]}
-          placeholder="@ejemplo"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
+          style={[styles.input, errors.nombres && styles.inputError]}
+          placeholder="Tus nombres"
+          value={nombres}
+          onChangeText={setNombres}
         />
-        {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+        {errors.nombres && <Text style={styles.errorText}>{errors.nombres}</Text>}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Primer Apellido *</Text>
+        <TextInput
+          style={[styles.input, errors.primerApellido && styles.inputError]}
+          placeholder="Tu primer apellido"
+          value={primerApellido}
+          onChangeText={setPrimerApellido}
+        />
+        {errors.primerApellido && <Text style={styles.errorText}>{errors.primerApellido}</Text>}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Segundo Apellido *</Text>
+        <TextInput
+          style={[styles.input, errors.segundoApellido && styles.inputError]}
+          placeholder="Tu segundo apellido"
+          value={segundoApellido}
+          onChangeText={setSegundoApellido}
+        />
+        {errors.segundoApellido && <Text style={styles.errorText}>{errors.segundoApellido}</Text>}
       </View>
 
       <View style={styles.field}>
@@ -115,6 +181,13 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
       <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
         <Text style={styles.finishButtonText}>Finalizar</Text>
       </TouchableOpacity>
+
+      <CustomToast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast({ ...toast, visible: false })}
+      />
     </View>
   );
 }

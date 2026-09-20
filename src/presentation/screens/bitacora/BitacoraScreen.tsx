@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { COLORS } from '../../../../constants/colors';
+import { COLORS } from '../../../../constants/Colors';
 import EmotionCalendar from '../../components/bitacora/EmotionCalendar';
 import PanelBienestar from '../../components/bitacora/PanelBienestar';
 import DayInfoCard from '../../components/bitacora/DayInfoCard';

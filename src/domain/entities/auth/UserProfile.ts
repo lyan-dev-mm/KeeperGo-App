@@ -8,7 +8,9 @@ export interface UserProfileEntity {
     publicId: string;
   };
   generalInfo?: {
-    username: string;
+    nombres: string;
+    primerApellido: string;
+    segundoApellido: string;
     shortDescription?: string;
   };
   professionalInfo?: {

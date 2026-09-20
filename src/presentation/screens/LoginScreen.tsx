@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { Validators } from '../../utils/validators';
 import { Texts } from '../../../constants/Texts';
-import { Colors} from '../../../constants/colors';
+import { Colors } from '../../../constants/Colors';
 
 export default function LoginScreen() {
   const { login, isLoading, errorMessage } = useAuth();

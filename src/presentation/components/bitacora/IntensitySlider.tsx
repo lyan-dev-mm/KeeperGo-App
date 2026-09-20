@@ -11,7 +11,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from 'react-native';
-import { COLORS, ENERGY_COLORS } from '../../../../constants/colors';
+import { COLORS, ENERGY_COLORS } from '../../../../constants/Colors';
 
 const { width: screenWidth } = Dimensions.get('window');
 

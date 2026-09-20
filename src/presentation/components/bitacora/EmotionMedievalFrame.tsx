@@ -1,7 +1,7 @@
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
-import { COLORS } from '../../../../constants/colors';
+import { COLORS } from '../../../../constants/Colors';
 import { Emocion } from '../../../domain/entities/bitacora/Emocion';
 
 const { width } = Dimensions.get('window');

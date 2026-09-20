@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import { COLORS } from '../../../../constants/colors'
+import { COLORS } from '../../../../constants/Colors';
 import { Emocion } from '../../../domain/entities/bitacora/Emocion';
 import { RegistroAnimo } from '../../../domain/entities/bitacora/RegistroAnimo'
 

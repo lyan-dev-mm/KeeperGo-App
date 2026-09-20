@@ -2,7 +2,7 @@
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons'; 
-import { COLORS } from '../../../../constants/colors';
+import { COLORS } from '../../../../constants/Colors';
 
 
 export interface EmotionDetailHeaderProps {

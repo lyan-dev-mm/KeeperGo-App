@@ -12,7 +12,11 @@ interface AuthContextType {
   isInitializing: boolean;
   errorMessage: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, fullName?: string) => Promise<boolean>;
+  register: (
+    email: string,
+    password: string,
+    names: { nombres: string; primerApellido: string; segundoApellido: string }
+  ) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -37,7 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email ?? '',
-          name: firebaseUser.displayName ?? '',
+          nombres: firebaseUser.displayName ?? '',
+          primerApellido: '',
+          segundoApellido: '',
         });
       } else {
         setUser(null);
@@ -66,12 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (
     email: string,
     password: string,
-    fullName?: string
+    names: { nombres: string; primerApellido: string; segundoApellido: string }
   ): Promise<boolean> => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const result = await registerUseCase.execute(email, password, fullName);
+      const result = await registerUseCase.execute(email, password, names);
       setUser(result);
       setIsLoading(false);
       return result != null;

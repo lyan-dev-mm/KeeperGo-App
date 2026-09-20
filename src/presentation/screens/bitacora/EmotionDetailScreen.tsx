@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { COLORS } from '../../../../constants/colors';
+import { COLORS } from '../../../../constants/Colors';
 import { Emocion } from '../../../domain/entities/bitacora/Emocion';
 import { useBitacora } from '../../hooks/useBitacora';
 import { SaveRegistroData } from '../../../domain/usecases/bitacora/SaveRegistroUseCase';
