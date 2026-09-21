@@ -1,1 +1,1 @@
-export { default } from '../../src/presentation/screens/HabitDetailScreen';
+export { default } from '../../src/presentation/screens/habitos/HabitDetailScreen';
