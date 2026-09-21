@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -11,40 +11,33 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 
-interface EditFieldModalProps {
+interface AddRuleModalProps {
   visible: boolean;
-  label: string;
-  placeholder?: string;
-  initialValue?: string;
-  multiline?: boolean;
   onClose: () => void;
-  onSave: (value: string) => void;
+  onSave: (rule: { title: string; description: string }) => void;
 }
 
-export default function EditFieldModal({
-  visible,
-  label,
-  placeholder,
-  initialValue = '',
-  multiline = false,
-  onClose,
-  onSave,
-}: EditFieldModalProps) {
-  const [value, setValue] = useState(initialValue);
-
-  // Sincroniza el valor cada vez que se abre el modal con un nuevo initialValue
-  useEffect(() => {
-    if (visible) setValue(initialValue);
-  }, [visible, initialValue]);
+export default function AddRuleModal({ visible, onClose, onSave }: AddRuleModalProps) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
 
   const handleSave = () => {
-    onSave(value);
+    if (!title.trim()) return;
+    onSave({ title: title.trim(), description: description.trim() });
+    setTitle('');
+    setDescription('');
+    onClose();
+  };
+
+  const handleClose = () => {
+    setTitle('');
+    setDescription('');
     onClose();
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+      <TouchableWithoutFeedback onPress={handleClose}>
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
@@ -54,22 +47,38 @@ export default function EditFieldModal({
         pointerEvents="box-none"
       >
         <View style={styles.card}>
-          <Text style={styles.label}>{label}</Text>
+          <Text style={styles.label}>Nueva regla</Text>
+
+          <Text style={styles.fieldLabel}>Título</Text>
           <TextInput
-            style={[styles.input, multiline && styles.inputMultiline]}
-            value={value}
-            onChangeText={setValue}
-            placeholder={placeholder}
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Ej. Respeta el ritmo de cada quien"
             placeholderTextColor="#B0B0B0"
-            multiline={multiline}
             autoFocus
           />
+
+          <Text style={styles.fieldLabel}>Descripción (opcional)</Text>
+          <TextInput
+            style={[styles.input, styles.inputMultiline]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Explica un poco más la regla..."
+            placeholderTextColor="#B0B0B0"
+            multiline
+          />
+
           <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
               <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveText}>Guardar</Text>
+            <TouchableOpacity
+              style={[styles.saveButton, !title.trim() && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={!title.trim()}
+            >
+              <Text style={styles.saveText}>Agregar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -103,7 +112,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4A4A4A',
+    marginBottom: 6,
+    marginTop: 6,
   },
   input: {
     borderWidth: 1,
@@ -116,7 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
   },
   inputMultiline: {
-    minHeight: 80,
+    minHeight: 70,
     textAlignVertical: 'top',
   },
   actionsRow: {
@@ -139,6 +155,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#C7E9C8',
   },
   saveText: {
     color: '#FFFFFF',
