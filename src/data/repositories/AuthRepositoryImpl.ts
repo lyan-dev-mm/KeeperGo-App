@@ -3,6 +3,8 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut,
+  sendEmailVerification,
+  reload,
   AuthError,
 } from 'firebase/auth';
 import { auth } from '../../infrastructure/firebase/firebaseConfig';
@@ -33,17 +35,40 @@ const userProfileRepository = new UserProfileRepositoryImpl();
 
 export class AuthRepositoryImpl implements AuthRepository {
   async login(email: string, password: string): Promise<UserEntity | null> {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const user = result.user;
-      return {
-        id: user.uid,
-        email: user.email ?? '',
-        name: user.displayName ?? '',
-      };
-    } catch (error) {
+    const result = await signInWithEmailAndPassword(auth, email, password).catch((error) => {
       throw new Error(handleFirebaseError(error as AuthError));
+    });
+
+    const user = result.user;
+
+    // Auto-reparación: si esta cuenta no tiene un documento de perfil en
+    // Firestore (por ejemplo, se creó antes de conectar este flujo), lo
+    // creamos aquí para que aparezca en el panel de admin.
+    let profile = await userProfileRepository.getUserProfile(user.uid);
+    if (!profile) {
+      await userProfileRepository.createUserProfile({
+        uid: user.uid,
+        email: user.email ?? '',
+        profileType: 'normal',
+        generalInfo: {
+          username: user.displayName ?? '',
+        },
+        disabled: false,
+      });
+      profile = await userProfileRepository.getUserProfile(user.uid);
     }
+
+    if (profile?.disabled) {
+      await signOut(auth);
+      throw new Error('Tu cuenta ha sido dada de baja. Contacta al administrador.');
+    }
+
+    return {
+      id: user.uid,
+      email: user.email ?? '',
+      name: user.displayName ?? '',
+      emailVerified: user.emailVerified,
+    };
   }
 
   async register(email: string, password: string, fullName?: string): Promise<UserEntity | null> {
@@ -53,23 +78,31 @@ export class AuthRepositoryImpl implements AuthRepository {
         await updateProfile(result.user, { displayName: fullName });
       }
 
-      // Crea también el documento de perfil en Firestore (colección "users"),
-      // necesario para que el panel de administración pueda listar usuarios.
       try {
         await userProfileRepository.createUserProfile({
           uid: result.user.uid,
           email: result.user.email ?? '',
-          name: fullName ?? '',
+          profileType: 'normal',
+          generalInfo: {
+            username: fullName ?? '',
+          },
+          disabled: false,
         });
-      } catch {
-        // Si falla la creación del perfil, no bloqueamos el registro del
-        // usuario — la cuenta de autenticación ya se creó correctamente.
+      } catch (profileError) {
+        console.error('❌ Error al crear el perfil del usuario en Firestore:', profileError);
+      }
+
+      try {
+        await sendEmailVerification(result.user);
+      } catch (verificationError) {
+        console.warn('No se pudo enviar el correo de verificación al registrar:', verificationError);
       }
 
       return {
         id: result.user.uid,
         email: result.user.email ?? '',
         name: fullName ?? '',
+        emailVerified: result.user.emailVerified,
       };
     } catch (error) {
       throw new Error(handleFirebaseError(error as AuthError));
@@ -86,5 +119,27 @@ export class AuthRepositoryImpl implements AuthRepository {
 
   async getRememberMe(): Promise<boolean> {
     return readRememberMe();
+  }
+
+  async sendVerificationEmail(): Promise<void> {
+    if (!auth.currentUser) return;
+    await sendEmailVerification(auth.currentUser);
+  }
+
+  async reloadCurrentUser(): Promise<UserEntity | null> {
+    if (!auth.currentUser) return null;
+    await reload(auth.currentUser);
+    const user = auth.currentUser;
+    return {
+      id: user.uid,
+      email: user.email ?? '',
+      name: user.displayName ?? '',
+      emailVerified: user.emailVerified,
+    };
+  }
+
+  async isAccountDisabled(uid: string): Promise<boolean> {
+    const profile = await userProfileRepository.getUserProfile(uid);
+    return profile?.disabled === true;
   }
 }

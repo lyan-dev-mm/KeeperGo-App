@@ -6,15 +6,21 @@ import {
   RegisterActivityResult,
 } from '../../domain/usecases/mascota/RegisterActivityUseCase';
 import { UpdatePetNameUseCase } from '../../domain/usecases/mascota/UpdatePetNameUseCase';
+import { UpdateSelectedPetUseCase } from '../../domain/usecases/mascota/UpdateSelectedPetUseCase';
+import { FeedPetUseCase } from '../../domain/usecases/mascota/FeedPetUseCase';
 import { PetRepositoryImpl } from '../../data/repositories/mascota/PetRepositoryImpl';
 import { MilestoneRepositoryImpl } from '../../data/repositories/mascota/MilestoneRepositoryImpl';
+import { PetOptionRepositoryImpl } from '../../data/repositories/mascota/PetOptionRepositoryImpl';
 import { useAuth } from './useAuth';
 
 const repository = new PetRepositoryImpl();
 const milestoneRepository = new MilestoneRepositoryImpl();
+const petOptionRepository = new PetOptionRepositoryImpl();
 const getPetUseCase = new GetPetUseCase(repository);
 const registerActivityUseCase = new RegisterActivityUseCase(repository, milestoneRepository);
 const updatePetNameUseCase = new UpdatePetNameUseCase(repository);
+const updateSelectedPetUseCase = new UpdateSelectedPetUseCase(repository, petOptionRepository);
+const feedPetUseCase = new FeedPetUseCase(repository, petOptionRepository);
 
 export function usePet() {
   const { user } = useAuth();
@@ -58,5 +64,25 @@ export function usePet() {
     [user]
   );
 
-  return { pet, isLoading, error, registerActivity, updateName, reload: loadPet };
+  const selectPet = useCallback(
+    async (petId: string) => {
+      if (!user) return;
+      const result = await updateSelectedPetUseCase.execute(user.id, petId);
+      setPet(result);
+      return result;
+    },
+    [user]
+  );
+
+  const feedPet = useCallback(
+    async (petOptionId: string) => {
+      if (!user) return;
+      const result = await feedPetUseCase.execute(user.id, petOptionId);
+      setPet(result);
+      return result;
+    },
+    [user]
+  );
+
+  return { pet, isLoading, error, registerActivity, updateName, selectPet, feedPet, reload: loadPet };
 }

@@ -42,9 +42,9 @@ export default function RegisterScreen() {
       return;
     }
 
-    const success = await register(email.trim(), password.trim(), name.trim());
-    if (success) {
-      router.replace('/ask-location');
+    const result = await register(email.trim(), password.trim(), name.trim());
+    if (result) {
+      router.replace({ pathname: '/verify-email', params: { next: 'ask-location' } });
     } else {
       Alert.alert('Error', errorMessage ?? 'Error inesperado');
     }

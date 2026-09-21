@@ -33,13 +33,17 @@ export default function LoginScreen() {
     setPasswordError(pErr);
     if (eErr || pErr) return;
 
-    const success = await login(email.trim(), password.trim());
-    if (success) {
+    const result = await login(email.trim(), password.trim());
+    if (result) {
+     if (result.emailVerified) {
       router.replace('/(tabs)/home');
     } else {
-      Alert.alert('Error', errorMessage ?? 'Error inesperado');
+      router.replace({ pathname: '/verify-email', params: { next: 'home' } });
     }
-  };
+  } else {
+    Alert.alert('Claves incorrectas', errorMessage ?? 'Usuario o Contraseña incorrectas');
+  }
+};
 
   return (
     <ScrollView contentContainerStyle={styles.container} style={styles.scrollBackground}>
@@ -103,8 +107,8 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.socialRow}>
-        <Ionicons name="logo-google" size={36} color="#DB4437" />
-        <Ionicons name="logo-facebook" size={36} color="#4267B2" style={{ marginLeft: 20 }} />
+              <Ionicons name="logo-google" size={36} color="#DB4437" />
+              <Ionicons name="logo-facebook" size={36} color="#4267B2" style={{ marginLeft: 20 }} />
       </View>
 
       <View style={styles.footerRow}>
@@ -121,7 +125,7 @@ const styles = StyleSheet.create({
   scrollBackground: { backgroundColor: '#fff' },
   container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 30, paddingVertical: 40 },
   logo: { width: 300, height: 300, alignSelf: 'center', marginBottom: 0 },
-  welcome: { fontSize: 20, textAlign: 'center', marginTop: 10, marginBottom: 20 },
+  welcome: { fontSize: 20, textAlign: 'center', marginTop: 10, marginBottom: 15 },
   input: { borderWidth: 1, borderColor: '#CCC', borderRadius: 8, padding: 12, marginBottom: 8 },
   error: { color: Colors.error, fontSize: 12, marginBottom: 8 },
   passwordContainer: {
@@ -134,7 +138,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: { flex: 1, padding: 12 },
   eyeButton: { paddingHorizontal: 12 },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
   checkboxLabel: { marginLeft: 8 },
   button: {
     backgroundColor: Colors.primary,
@@ -144,10 +148,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: { color: '#fff', fontWeight: 'bold' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 30 },
   divider: { flex: 1, height: 1, backgroundColor: '#DDD' },
   dividerText: { marginHorizontal: 10, color: '#888' },
-  socialRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 20 },
+  socialRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 30 },
   footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   link: { fontWeight: 'bold', marginLeft: 4, color: Colors.primary },
 });

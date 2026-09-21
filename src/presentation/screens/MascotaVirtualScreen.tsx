@@ -1,28 +1,33 @@
-import React, { useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePet } from '../hooks/usePet';
 import { usePetReactions } from '../hooks/usePetReactions';
 import { useDailyMessage } from '../hooks/useDailyMessage';
 import { usePetActivity } from '../contexts/PetActivityContext';
-import { useMilestones } from '../hooks/useMilestones';
+import { usePetOptions } from '../hooks/usePetOptions';
 import { PetNameEditor } from '../components/PetNameEditor';
 import { MotivationalBanner } from '../components/MotivationalBanner';
 import { WeeklyStreakRow } from '../components/WeeklyStreakRow';
 import { LevelProgressBar } from '../components/LevelProgressBar';
 import { RewardsCarousel } from '../components/RewardsCarousel';
 import { InteractivePet } from '../components/InteractivePet';
+import { PetSelectorModal } from '../components/PetSelectorModal';
+import { FeedPetModal } from '../components/FeedPetModal';
 import { getXpRequiredForLevel } from '../../utils/xpUtils';
 import { delay } from '../../utils/asyncUtils';
+import { getCurrentStage } from '../../domain/entities/mascota/PetOption';
 
 const DEFAULT_SPEECH = '¡Lo estás haciendo genial! Cada día te acercas más a tus metas.';
 
 export default function MascotaVirtualScreen() {
-  const { pet, isLoading, error, updateName } = usePet();
+  const { pet, isLoading, error, updateName, selectPet, feedPet } = usePet();
   const { message } = useDailyMessage();
   const { petRef, reactionMessage, triggerEvent } = usePetReactions();
   const { consumePendingResult } = usePetActivity();
-  const { milestones } = useMilestones();
+  const { petOptions, isLoading: optionsLoading } = usePetOptions();
+  const [selectorVisible, setSelectorVisible] = useState(false);
+  const [feedVisible, setFeedVisible] = useState(false);
 
   useEffect(() => {
     if (!pet) return;
@@ -60,11 +65,29 @@ export default function MascotaVirtualScreen() {
   }
 
   const xpRequired = getXpRequiredForLevel(pet.level);
+  const unlockedPetIds = pet.unlockedPetIds ?? [];
+  const petGrowth = pet.petGrowth ?? {};
+  const feedingPoints = pet.feedingPoints ?? 0;
 
-  const petStage: 'huevo' | 'polilla' =
-    milestones.length > 0 && pet.bestStreak >= Math.min(...milestones.map((m) => m.days))
-      ? 'polilla'
-      : 'huevo';
+  const selectedOption = petOptions.find((o) => o.id === pet.selectedPetId) ?? petOptions[0] ?? null;
+  const currentStage = selectedOption
+    ? getCurrentStage(selectedOption, petGrowth[selectedOption.id] ?? 0)
+    : null;
+
+  const handleSelectPet = async (petId: string) => {
+    try {
+      await selectPet(petId);
+    } catch (e) {
+      Alert.alert('No disponible', (e as Error).message);
+    }
+  };
+
+  const handleFeed = async (petOptionId: string) => {
+    await feedPet(petOptionId);
+    if (petOptionId === selectedOption?.id) {
+      await triggerEvent('RECOMPENSA_DESBLOQUEADA');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -95,15 +118,53 @@ export default function MascotaVirtualScreen() {
               ref={petRef}
               onTap={() => triggerEvent('INTERACCION_MASCOTA')}
               size={64}
-              stage={petStage}
+              stage={currentStage}
             />
+            {currentStage && <Text style={styles.stageLabel}>{currentStage.name}</Text>}
+            <TouchableOpacity style={styles.changePetButton} onPress={() => setSelectorVisible(true)}>
+              <Text style={styles.changePetText}>Cambiar mascota</Text>
+            </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.feedingCard}>
+          <View>
+            <Text style={styles.feedingLabel}>Puntos de alimento</Text>
+            <Text style={styles.feedingPoints}>{feedingPoints}</Text>
+          </View>
+          <TouchableOpacity style={styles.feedButton} onPress={() => setFeedVisible(true)}>
+            <Text style={styles.feedButtonText}>Alimentar</Text>
+          </TouchableOpacity>
         </View>
 
         <LevelProgressBar level={pet.level} currentXP={pet.currentXP} xpRequired={xpRequired} />
 
         <RewardsCarousel bestStreak={pet.bestStreak} />
       </ScrollView>
+
+      <PetSelectorModal
+        visible={selectorVisible}
+        onClose={() => setSelectorVisible(false)}
+        petOptions={petOptions}
+        isLoading={optionsLoading}
+        bestStreak={pet.bestStreak}
+        unlockedPetIds={unlockedPetIds}
+        petGrowth={petGrowth}
+        selectedPetId={selectedOption?.id ?? ''}
+        onSelect={handleSelectPet}
+      />
+
+      <FeedPetModal
+        visible={feedVisible}
+        onClose={() => setFeedVisible(false)}
+        petOptions={petOptions}
+        isLoading={optionsLoading}
+        bestStreak={pet.bestStreak}
+        unlockedPetIds={unlockedPetIds}
+        petGrowth={petGrowth}
+        feedingPoints={feedingPoints}
+        onFeed={handleFeed}
+      />
     </SafeAreaView>
   );
 }
@@ -128,4 +189,20 @@ const styles = StyleSheet.create({
   petPanel: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
   speechBubble: { backgroundColor: '#F1F8ED', borderRadius: 12, padding: 10, marginBottom: 10 },
   speechText: { fontSize: 11, color: '#3E6B3E', textAlign: 'center' },
+  stageLabel: { fontSize: 11, color: '#9E9E9E', marginTop: 4, fontWeight: '600' },
+  changePetButton: { marginTop: 6 },
+  changePetText: { fontSize: 11, color: '#4CAF50', fontWeight: '600', textDecorationLine: 'underline' },
+  feedingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+  },
+  feedingLabel: { fontSize: 12, color: '#9E9E9E' },
+  feedingPoints: { fontSize: 22, fontWeight: 'bold', color: '#4CAF50', marginTop: 2 },
+  feedButton: { backgroundColor: '#4CAF50', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 18 },
+  feedButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
 });
