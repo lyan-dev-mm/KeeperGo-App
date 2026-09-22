@@ -169,7 +169,7 @@ export const InteractivePet = forwardRef<InteractivePetHandle, InteractivePetPro
 );
 
 const styles = StyleSheet.create({
-  wrapper: { alignItems: 'center', justifyContent: 'center' },
+  wrapper: { alignItems: 'flex-end', justifyContent: 'center' },
   sparkleContainer: {
     position: 'absolute',
     top: 0,
