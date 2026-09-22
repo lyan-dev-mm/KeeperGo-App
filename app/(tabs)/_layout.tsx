@@ -8,7 +8,7 @@ export default function TabsLayout() {
       <View style={styles.content}>
      <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="home" />
-      <Stack.Screen name="racha" options={{ headerShown: true, title: 'Tu Racha' }} />
+      <Stack.Screen name="racha" options={{ headerShown: false }} />
       <Stack.Screen name="bitacora" />
           <Stack.Screen name="habits" />
           <Stack.Screen name="search-community" />

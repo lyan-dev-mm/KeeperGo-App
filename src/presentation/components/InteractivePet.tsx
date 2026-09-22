@@ -3,6 +3,7 @@ import { Animated, TouchableWithoutFeedback, View, Text, Image, StyleSheet } fro
 import { Ionicons } from '@expo/vector-icons';
 import { PetAnimationType } from '../../domain/entities/mascota/PetEvent';
 import { PetGrowthStage } from '../../domain/entities/mascota/PetOption';
+import { PetImage } from '../../utils/petImageAssets';
 
 export interface InteractivePetHandle {
   play: (animation: PetAnimationType) => void;
@@ -156,7 +157,7 @@ export const InteractivePet = forwardRef<InteractivePetHandle, InteractivePetPro
             }}
           >
             {stage?.imageUrl ? (
-              <Image source={{ uri: stage.imageUrl }} style={{ width: size, height: size }} resizeMode="contain" />
+              <PetImage imageUrl={stage.imageUrl} width={size} height={size} />
             ) : (
               <Text style={{ fontSize: size }}>{stage?.emoji ?? FALLBACK_EMOJI}</Text>
             )}
@@ -169,7 +170,13 @@ export const InteractivePet = forwardRef<InteractivePetHandle, InteractivePetPro
 
 const styles = StyleSheet.create({
   wrapper: { alignItems: 'center', justifyContent: 'center' },
-  sparkleContainer: { ...StyleSheet.absoluteFillObject },
+  sparkleContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   sparkleTopLeft: { position: 'absolute', top: 4, left: 6 },
   sparkleTopRight: { position: 'absolute', top: 10, right: 4 },
   sparkleBottom: { position: 'absolute', bottom: 6, alignSelf: 'center' },

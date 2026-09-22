@@ -16,6 +16,7 @@ import {
   getCurrentStage,
   getNextStage,
 } from '../../domain/entities/mascota/PetOption';
+import { PetImage } from '../../utils/petImageAssets';
 
 interface FeedPetModalProps {
   visible: boolean;
@@ -79,7 +80,7 @@ export function FeedPetModal({
                 return (
                   <View key={option.id} style={styles.row}>
                     {stage.imageUrl ? (
-                      <Image source={{ uri: stage.imageUrl }} style={styles.rowImage} resizeMode="contain" />
+                      <PetImage imageUrl={stage.imageUrl} width={36} height={36} style={styles.rowImage} />
                     ) : (
                       <Text style={styles.rowEmoji}>{stage.emoji}</Text>
                     )}
@@ -115,7 +116,14 @@ export function FeedPetModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
   centerWrapper: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   card: { backgroundColor: '#fff', borderRadius: 20, padding: 20, width: '100%', maxWidth: 360, maxHeight: '80%' },
   title: { fontSize: 17, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)', textAlign: 'center' },

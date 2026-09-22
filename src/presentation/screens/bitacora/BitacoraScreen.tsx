@@ -17,15 +17,9 @@ import DayInfoCard from '../../components/bitacora/DayInfoCard';
 import RegistroAnimo from '../../../domain/entities/bitacora/RegistroAnimo';
 import { useBitacoraStore } from '../../store/bitacoraStore';
 
-interface RouteParams {
-  fecha?: string;
-  registro?: string;
-  nuevoRegistro?: string;
-}
-
 export default function BitacoraScreen(): JSX.Element {
   const router = useRouter();
-  const params = useLocalSearchParams<RouteParams>();
+  const params = useLocalSearchParams();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState<boolean>(false);
   

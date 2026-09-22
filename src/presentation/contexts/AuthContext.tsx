@@ -71,9 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return result;
     } catch (error) {
-      setErrorMessage((error as Error).message);
+      const message = error instanceof Error ? error.message : 'No se pudo iniciar sesión.';
+      setErrorMessage(message);
       setIsLoading(false);
-      return null;
+      throw new Error(message);
     }
   };
 
