@@ -8,16 +8,14 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
-import { pickAndUploadImageToCloudinary } from '../../../infrastructure/cloudinary/cloudinaryUploadService';
 import { CommunityRepositoryImpl } from '../../../data/repositories/comunidad/CommunityRepositoryImpl';
 import { CreateCommunityUseCase } from '../../../domain/usecases/comunidad/CreateCommunityUseCase';
-import { CommunityRule, CommunityCoverImage, CommunityVisibility } from '../../../domain/entities/comunidad/Community';
+import { CommunityRule, CommunityVisibility } from '../../../domain/entities/comunidad/Community';
 import AddRuleModal from '../../components/AddRuleModal';
 
 const COLOR_PALETTE = ['#FF8FAB', '#20B2AA', '#FFD700', '#9370DB', '#FFA07A', '#B8C0FF', '#98F59C'];
@@ -32,35 +30,9 @@ export default function CreateCommunityScreen() {
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<CommunityVisibility>('public');
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
-  const [coverImage, setCoverImage] = useState<CommunityCoverImage | null>(null);
   const [rules, setRules] = useState<CommunityRule[]>([]);
   const [isRuleModalVisible, setIsRuleModalVisible] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handlePickCover = async () => {
-    try {
-      setIsUploadingImage(true);
-      const uploaded = await pickAndUploadImageToCloudinary();
-      if (uploaded) {
-        setCoverImage({
-          url: uploaded.secure_url,
-          publicId: uploaded.public_id,
-          format: uploaded.format ?? null,
-          width: uploaded.width ?? null,
-          height: uploaded.height ?? null,
-          bytes: uploaded.bytes ?? null,
-        });
-      }
-    } catch (error) {
-      Alert.alert(
-        'No se pudo subir la imagen',
-        error instanceof Error ? error.message : 'Intenta de nuevo.'
-      );
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
 
   const handleAddRule = (rule: CommunityRule) => {
     setRules((prev) => [...prev, rule]);
@@ -88,7 +60,7 @@ export default function CreateCommunityScreen() {
           description: description.trim(),
           visibility,
           color: selectedColor,
-          coverImage,
+          coverImage: null,   // Sin imagen, solo color
           rules,
         },
         user.id
@@ -119,19 +91,10 @@ export default function CreateCommunityScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* --- PORTADA --- */}
-        <TouchableOpacity style={styles.coverPicker} onPress={handlePickCover} activeOpacity={0.8}>
-          {isUploadingImage ? (
-            <ActivityIndicator color="#58C759" />
-          ) : coverImage ? (
-            <Image source={{ uri: coverImage.url }} style={styles.coverImagePreview} />
-          ) : (
-            <View style={[styles.coverPlaceholder, { backgroundColor: selectedColor }]}>
-              <Ionicons name="camera-outline" size={28} color="#FFFFFF" />
-              <Text style={styles.coverPlaceholderText}>Agregar portada</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        {/* --- VISTA PREVIA DE PORTADA --- */}
+        <View style={[styles.coverPreview, { backgroundColor: selectedColor }]}>
+          <Ionicons name="people" size={50} color="#FFFFFF" />
+        </View>
 
         {/* --- COLOR DE RESPALDO --- */}
         <Text style={styles.sectionLabel}>Color del grupo</Text>
@@ -279,27 +242,12 @@ const styles = StyleSheet.create({
   backButton: { padding: 5 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#4A3E38' },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 60 },
-  coverPicker: {
+  coverPreview: {
     height: 150,
     borderRadius: 20,
-    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F4F4F4',
-  },
-  coverImagePreview: { width: '100%', height: '100%' },
-  coverPlaceholder: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  coverPlaceholderText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 13,
-    marginTop: 8,
   },
   sectionLabel: {
     fontSize: 14,
@@ -310,6 +258,7 @@ const styles = StyleSheet.create({
   },
   colorRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 20,
   },
   colorSwatch: {
@@ -317,6 +266,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     marginRight: 12,
+    marginBottom: 8,
   },
   colorSwatchSelected: {
     borderWidth: 3,
