@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../../../constants/Colors';
+import { Colors } from '../../../../constants/colors';
 import { pickAndUploadImageToCloudinary } from '../../../infrastructure/cloudinary/cloudinaryUploadService';
 import { datosNonStopService, ProfessionalData } from '../../../infrastructure/api/datosNonStopService';
 import { CustomToast } from '../common/CustomToast';
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.primaryDark || '#5AC155',
+    color: Colors.primary || '#5AC155',
     marginBottom: 15,
   },
   inputWithButton: {

@@ -1,9 +1,7 @@
 import { Stack } from 'expo-router';
 import { AuthProvider } from '../src/presentation/contexts/AuthContext';
-import { PetActivityProvider } from '../src/presentation/contexts/PetActivityContext';
 import { Platform } from 'react-native';
-import { useEffect } from 'react';
-import { HabitsProvider } from '../src/presentation/contexts/HabitsContext';  
+import Providers from './providers';
 
 if (Platform.OS === 'web') {
   require('leaflet/dist/leaflet.css');
@@ -14,8 +12,7 @@ export default function RootLayout() {
   
   return (
      <AuthProvider>
-        <PetActivityProvider>
-          <HabitsProvider>    
+        <Providers> 
           <Stack screenOptions={{ headerShown: false }}> 
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
@@ -24,6 +21,13 @@ export default function RootLayout() {
             <Stack.Screen name="(modals)/RegisterEmotion" options={{ presentation: 'modal', headerShown: false, }} />
             <Stack.Screen name="(modals)/EmotionDetail" options={{ presentation: 'modal', headerShown: false, }}  />
             <Stack.Screen name="(modals)/EjercicioRespiracion" options={{ presentation: 'modal', headerShown: false, }} />
+            <Stack.Screen name="(modals)/DASS21" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="(modals)/SUS" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="(modals)/Autopercepcion" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="(modals)/Feedback" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="(modals)/Paywall" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="(modals)/BienvenidaPiloto" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="(modals)/CierrePiloto" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="kii-chat" options={{ headerShown: false }} />
             <Stack.Screen name="admin" options={{ headerShown: false }} />
             <Stack.Screen name="admin-messages" options={{ headerShown: false }} />
@@ -36,8 +40,7 @@ export default function RootLayout() {
             <Stack.Screen name="specialist-profile" options={{ headerShown: false }} />
             <Stack.Screen name="specialist-chat" options={{ headerShown: false }} />
           </Stack>
-        </HabitsProvider>
-      </PetActivityProvider>
+      </Providers>
     </AuthProvider>
   );
 }

@@ -30,8 +30,21 @@ export default function IntensitySlider({
 }: IntensitySliderProps): JSX.Element {
   const [sliderValue, setSliderValue] = useState<number>(value);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // FIX: el ancho del track ahora también vive en estado.
+  // Antes solo se guardaba en un ref (containerWidth.current) y los rangos
+  // del interpolate de Animated se calculaban durante el render usando ese
+  // ref. Si el componente no volvía a renderizarse después de medir el
+  // layout (onLayout), el interpolate quedaba "congelado" con el ancho
+  // inicial (0), y el thumb se veía pegado a la posición 0 aunque el
+  // número mostrado sí fuera el correcto. Con el ancho en estado, medir el
+  // layout SIEMPRE dispara un re-render y el interpolate se recalcula.
+
+  const [containerWidth, setCotainerWidth] = useState<number>(0);
+  // Copia "viva" del ancho para que el PanResponder (creado una sola vez
+  // con useRef) siempre lea el valor más reciente sin closures obsoletos.
+  const containerWidthRef = useRef<number>(0);
   const pan = useRef<Animated.Value>(new Animated.Value(0)).current;
-  const containerWidth = useRef<number>(0);
   const thumbPosition = useRef<number>(0);
 
   const getEnergyColor = (val: number): string => {
@@ -51,11 +64,16 @@ export default function IntensitySlider({
     return Math.round(position * (max - min) + min);
   };
 
+  // Sincroniza la posición del thumb cuando cambia `value` desde fuera
+  // (p. ej. al editar un registro existente) o en cuanto ya conocemos el
+  // ancho real del contenedor. Antes esto se saltaba si value === sliderValue
+  // (el caso típico del primer render), que era justo la otra mitad del bug.
+
   useEffect(() => {
-    if (!isDragging && value !== sliderValue) {
+    if (!isDragging && containerWidth > 0) {
       setSliderValue(value);
       const position = getPositionFromValue(value);
-      const newX = position * containerWidth.current;
+      const newX = position * containerWidth;
       pan.setValue(newX);
       thumbPosition.current = newX;
     }
@@ -69,10 +87,11 @@ export default function IntensitySlider({
         setIsDragging(true);
       },
       onPanResponderMove: (_evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        if (containerWidth.current === 0) return;
+        const width = containerWidthRef.current;
+        if (width === 0) return;
 
-        const newX = Math.max(0, Math.min(containerWidth.current, gestureState.dx + thumbPosition.current));
-        const position = newX / containerWidth.current;
+        const newX = Math.max(0, Math.min(width, gestureState.dx + thumbPosition.current));
+        const position = newX / width;
         const newValue = getValueFromPosition(position);
 
         setSliderValue(newValue);
@@ -141,8 +160,10 @@ export default function IntensitySlider({
           style={[
             styles.progressOverlay,
             {
+              // FIX: usamos el estado `containerWidth` (reactivo) en vez del
+              // ref, así este interpolate se recalcula cuando cambia el layout.
               width: pan.interpolate({
-                inputRange: [0, containerWidth.current || 1],
+                inputRange: [0, containerWidth || 1],
                 outputRange: ['0%', '100%'],
                 extrapolate: 'clamp',
               }),
@@ -158,10 +179,13 @@ export default function IntensitySlider({
       <View
         style={styles.sliderContainer}
         onLayout={(event) => {
-          containerWidth.current = event.nativeEvent.layout.width;
+          const w = event.nativeEvent.layout.width;
+          containerWidthRef.current = w;
+          setCotainerWidth(w);
+
           const initialValue = value;
           const initialPosition = getPositionFromValue(initialValue);
-          const initialX = initialPosition * containerWidth.current;
+          const initialX = initialPosition * w;
           pan.setValue(initialX);
           thumbPosition.current = initialX;
           setSliderValue(initialValue);
@@ -183,9 +207,10 @@ export default function IntensitySlider({
                 {
                   transform: [
                     {
+                      // Fix: mismo motivo, usamos 'containerWidth' de estado
                       translateX: pan.interpolate({
-                        inputRange: [0, containerWidth.current || 1],
-                        outputRange: [0, containerWidth.current || 1],
+                        inputRange: [0, containerWidth || 1],
+                        outputRange: [0, containerWidth || 1],
                         extrapolate: 'clamp',
                       }),
                     },

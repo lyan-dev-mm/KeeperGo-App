@@ -1,3 +1,5 @@
+// app/(tabs)/_layout
+
 import { Stack } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { LiquidTabBar } from '../../src/presentation/components/LiquidTabBar';
