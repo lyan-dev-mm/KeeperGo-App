@@ -1,1 +1,1 @@
-export { default } from '../../src/presentation/screens/ThreadReplyScreen';
+export { default } from '../../src/presentation/screens/habitos/ThreadReplyScreen';

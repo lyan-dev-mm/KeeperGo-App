@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useHabits, WEEK_DAY_LABELS } from '../../contexts/HabitsContext';
 import EditFieldModal from '../../components/EditFieldModal';
+
+import { CommunityRepositoryImpl } from '../../../data/repositories/comunidad/CommunityRepositoryImpl';
+import { GetUserCommunitiesUseCase } from '../../../domain/usecases/comunidad/GetUserCommunitiesUseCase';
+import { CommunityEntity } from '../../../domain/entities/comunidad/Community';
+import { useAuth } from '../../hooks/useAuth';
+
+const getUserCommunitiesUseCase = new GetUserCommunitiesUseCase(new CommunityRepositoryImpl());
 
 function showComingSoon() {
   Alert.alert('Próximamente', 'Estamos trabajando en esto, pronto estará disponible.');
@@ -14,11 +21,24 @@ type EditingField = 'objetivo' | 'semilla' | 'actividad' | null;
 
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const { getHabitById, updateHabitField, addActivity, toggleActivity, deleteActivity, todayIndex } =
     useHabits();
   const habit = getHabitById(id);
 
   const [editingField, setEditingField] = useState<EditingField>(null);
+  const [myCommunities, setMyCommunities] = useState<CommunityEntity[]>([]);
+
+  // Cargar las comunidades del usuario cuando la pantalla obtiene foco
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      getUserCommunitiesUseCase
+        .execute(user.id)
+        .then(setMyCommunities)
+        .catch(console.error);
+    }, [user?.id])
+  );
 
   if (!habit) {
     return (
@@ -97,8 +117,6 @@ export default function HabitDetailScreen() {
         <Text style={styles.sectionTitle}>Progreso</Text>
         <View style={styles.progressRow}>
           {habit.progress.map((done, index) => {
-            // Un día futuro nunca puede mostrar palomita, sin importar
-            // lo que diga la data (por ejemplo, si cambia la semana).
             const isFuture = index > todayIndex;
             const isDone = done && !isFuture;
             return (
@@ -119,22 +137,60 @@ export default function HabitDetailScreen() {
         </View>
 
         {/* --- COMUNIDAD --- */}
-        <Text style={styles.sectionTitle}>Comunidad</Text>
-        <View style={styles.communityBox}>
-          <Text style={styles.communityPlaceholder}>Aquí aparecerán tus comunidades</Text>
-          <View style={styles.communityIcon}>
-            <Ionicons name="earth-outline" size={26} color="#58C759" />
-          </View>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Comunidad</Text>
           <TouchableOpacity
-            style={styles.searchButton}
             onPress={() => router.push('/(tabs)/search-community')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.searchButtonText}>Buscar</Text>
+            <Ionicons name="search-outline" size={18} color="#A0A0A0" />
           </TouchableOpacity>
         </View>
 
+        {myCommunities.length === 0 ? (
+          <View style={styles.communityBox}>
+            <Text style={styles.communityPlaceholder}>Aquí aparecerán tus comunidades</Text>
+            <View style={styles.communityIcon}>
+              <Ionicons name="earth-outline" size={26} color="#58C759" />
+            </View>
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={() => router.push('/(tabs)/search-community')}
+            >
+              <Text style={styles.searchButtonText}>Buscar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.communitiesScroll}
+          >
+            {myCommunities.map((community) => (
+              <TouchableOpacity
+                key={community.id}
+                style={styles.communityMiniCard}
+                onPress={() =>
+                  router.push({ pathname: '/(tabs)/community-detail', params: { id: community.id } })
+                }
+                activeOpacity={0.8}
+              >
+                <View style={[styles.communityMiniBanner, { backgroundColor: community.color }]}>
+                  <Ionicons name="people" size={26} color="#FFF" />
+                </View>
+                <Text style={styles.communityMiniName} numberOfLines={2}>
+                  {community.name}
+                </Text>
+                <Text style={styles.communityMiniMeta}>
+                  {community.memberCount} {community.memberCount === 1 ? 'miembro' : 'miembros'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
         {/* --- ACTIVIDADES --- */}
-        <Text style={styles.sectionTitle}>Actividades</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Actividades</Text>
 
         {habit.activities.length === 0 ? (
           <Text style={styles.emptyActivitiesText}>Aún no creas ninguna tarea.</Text>
@@ -272,6 +328,12 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     marginBottom: 15,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   progressRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -302,6 +364,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#A0A0A0',
   },
+  // ==== COMUNIDAD (vacío) ====
   communityBox: {
     backgroundColor: '#F4F4F4',
     borderRadius: 16,
@@ -328,6 +391,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
   },
+  // ==== COMUNIDAD (con carrusel) ====
+  communitiesScroll: {
+    paddingBottom: 15,
+    paddingRight: 10,
+  },
+  communityMiniCard: {
+    width: 130,
+    marginRight: 12,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 14,
+    padding: 10,
+  },
+  communityMiniBanner: {
+    height: 60,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  communityMiniName: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 3,
+  },
+  communityMiniMeta: {
+    fontSize: 11,
+    color: '#A0A0A0',
+  },
+  // ==== ACTIVIDADES ====
   emptyActivitiesText: {
     fontSize: 13,
     color: '#A0A0A0',

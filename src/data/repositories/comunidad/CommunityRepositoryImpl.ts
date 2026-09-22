@@ -72,8 +72,10 @@ export class CommunityRepositoryImpl implements CommunityRepository {
       memberCount: 1,
     });
 
-    await setDoc(this.memberDocRef(communityRef.id, createdBy), {
-      uid: createdBy, 
+      await setDoc(this.memberDocRef(communityRef.id, createdBy), {
+      uid: createdBy,
+      userName: null,       // Se rellena cuando el usuario actualice su perfil (o null)
+      userColor: null,
       role: 'owner',
       joinedAt: serverTimestamp(),
     });
@@ -115,22 +117,34 @@ export class CommunityRepositoryImpl implements CommunityRepository {
     return communityFromSnapshot(snapshot as QueryDocumentSnapshot<DocumentData>);
   }
 
-  async getMembership(communityId: string, uid: string): Promise<CommunityMemberEntity | null> {
+    async getMembership(communityId: string, uid: string): Promise<CommunityMemberEntity | null> {
     const snapshot = await getDoc(this.memberDocRef(communityId, uid));
     if (!snapshot.exists()) return null;
     const data = snapshot.data();
-    return { uid, role: data.role, joinedAt: data.joinedAt ?? null };
+    return {
+      uid,
+      role: data.role,
+      userName: data.userName ?? null,
+      userColor: data.userColor ?? null,
+      joinedAt: data.joinedAt ?? null,
+    };
   }
 
- async joinCommunity(communityId: string, uid: string): Promise<void> {
-  await setDoc(this.memberDocRef(communityId, uid), {
-    uid: uid,  // <-- NUEVO
-    role: 'member',
-    joinedAt: serverTimestamp(),
-  });
-  await updateDoc(this.communityDocRef(communityId), { memberCount: increment(1) });
-}
-
+   async joinCommunity(
+    communityId: string,
+    uid: string,
+    userName: string = 'Usuario',
+    userColor: string = '#98F59C'
+  ): Promise<void> {
+    await setDoc(this.memberDocRef(communityId, uid), {
+      uid,
+      userName,
+      userColor,
+      role: 'member',
+      joinedAt: serverTimestamp(),
+    });
+    await updateDoc(this.communityDocRef(communityId), { memberCount: increment(1) });
+  }
   async leaveCommunity(communityId: string, uid: string): Promise<void> {
     await deleteDoc(this.memberDocRef(communityId, uid));
     await updateDoc(this.communityDocRef(communityId), { memberCount: increment(-1) });
@@ -161,9 +175,13 @@ export class CommunityRepositoryImpl implements CommunityRepository {
     });
   }
 
-  async acceptJoinRequest(communityId: string, uid: string): Promise<void> {
+    async acceptJoinRequest(communityId: string, uid: string): Promise<void> {
+    // Antes de actualizar la request, traemos el userName y lo usamos
+    const requestSnapshot = await getDoc(this.joinRequestDocRef(communityId, uid));
+    const userName = requestSnapshot.exists() ? requestSnapshot.data().userName : 'Usuario';
+    
     await updateDoc(this.joinRequestDocRef(communityId, uid), { status: 'accepted' });
-    await this.joinCommunity(communityId, uid);
+    await this.joinCommunity(communityId, uid, userName);
   }
 
   async rejectJoinRequest(communityId: string, uid: string): Promise<void> {
@@ -223,5 +241,22 @@ export class CommunityRepositoryImpl implements CommunityRepository {
     batch.delete(this.communityDocRef(communityId));
 
     await batch.commit();
+  }
+    async getCommunityMembers(communityId: string): Promise<CommunityMemberEntity[]> {
+    const membersQuery = query(
+      collection(db, COMMUNITIES_COLLECTION, communityId, 'members'),
+      orderBy('joinedAt', 'asc')
+    );
+    const snapshot = await getDocs(membersQuery);
+    return snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        uid: docSnap.id,
+        role: data.role,
+        userName: data.userName ?? null,
+        userColor: data.userColor ?? null,
+        joinedAt: data.joinedAt ?? null,
+      };
+    });
   }
 }
