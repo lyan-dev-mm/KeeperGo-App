@@ -2,9 +2,9 @@ import { RegistroAnimo } from '../entities/bitacora/RegistroAnimo';
 
 export interface IRegistroRepository {
   getRegistros(userId: string): Promise<RegistroAnimo[]>;
-  getRegistroById(id: string): Promise<RegistroAnimo | null>;
+  getRegistroById(id: string, userId: string): Promise<RegistroAnimo | null>;
   saveRegistro(registro: RegistroAnimo): Promise<RegistroAnimo>;
-  deleteRegistro(id: string): Promise<boolean>;
+  deleteRegistro(id: string, userId: string): Promise<boolean>;
   getRegistrosPorFecha(
     userId: string,
     fechaInicio: Date,
