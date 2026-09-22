@@ -20,16 +20,10 @@ import { useBitacoraStore } from '../../store/bitacoraStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { useShallow } from 'zustand/react/shallow';
 
-interface RouteParams {
-  fecha?: string;
-  registro?: string;
-  nuevoRegistro?: string;
-}
-
 export default function BitacoraScreen(): JSX.Element {
   const { user } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams<RouteParams>();
+  const params = useLocalSearchParams();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const userId = user?.id;

@@ -1,4 +1,4 @@
-export type TecnicaRespiracion = '4-7-8' | 'diafragmatica' | 'cuadrada';
+export type TecnicaRespiracion = '4-7-8' | 'diafragmatica' | 'cuadrada' | 'alterna';
 
 export interface FaseRespiracion {
   tipo: 'inhalar' | 'mantener' | 'exhalar';

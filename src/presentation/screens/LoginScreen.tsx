@@ -33,17 +33,20 @@ export default function LoginScreen() {
     setPasswordError(pErr);
     if (eErr || pErr) return;
 
-    const result = await login(email.trim(), password.trim());
-    if (result) {
-     if (result.emailVerified) {
-      router.replace('/(tabs)/home');
-    } else {
-      router.replace({ pathname: '/verify-email', params: { next: 'home' } });
+    try {
+      const result = await login(email.trim(), password.trim());
+      if (result) {
+        if (result.emailVerified) {
+          router.replace('/(tabs)/home');
+        } else {
+          router.replace({ pathname: '/verify-email', params: { next: 'home' } });
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Usuario o contraseña incorrectos.';
+      Alert.alert('Inicio de sesión', message);
     }
-  } else {
-    Alert.alert('Claves incorrectas', errorMessage ?? 'Usuario o Contraseña incorrectas');
-  }
-};
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container} style={styles.scrollBackground}>

@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdminPetOptions } from '../hooks/useAdminPetOptions';
 import { PetOptionEntity, PetGrowthStage } from '../../domain/entities/mascota/PetOption';
+import { getPetImageSource, PET_IMAGE_ASSETS, PetImage } from '../../utils/petImageAssets';
 
 function generateStageId() {
   return `stage-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -268,7 +269,7 @@ export default function AdminPetOptionsScreen() {
                 .map((stage) => (
                   <TouchableOpacity key={stage.id} style={styles.stageRow} onPress={() => openEditStageModal(stage)}>
                     {stage.imageUrl ? (
-                      <Image source={{ uri: stage.imageUrl }} style={styles.stageRowImage} resizeMode="contain" />
+                      <Image source={getPetImageSource(stage.imageUrl) ?? undefined} style={styles.stageRowImage} resizeMode="contain" />
                     ) : (
                       <Text style={styles.stageRowEmoji}>{stage.emoji}</Text>
                     )}
@@ -312,7 +313,13 @@ export default function AdminPetOptionsScreen() {
         onRequestClose={() => setStageModalVisible(false)}
       >
         <View style={styles.stageModalOverlay}>
-          <View style={styles.stageModalCard}>
+          <ScrollView
+            style={styles.stageModalScroll}
+            contentContainerStyle={styles.stageModalScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.stageModalCard}>
             <Text style={styles.modalTitle}>{editingStageId ? 'Editar etapa' : 'Nueva etapa'}</Text>
 
             <Text style={styles.fieldLabel}>Nombre de la etapa</Text>
@@ -321,15 +328,28 @@ export default function AdminPetOptionsScreen() {
             <Text style={styles.fieldLabel}>Emoji (respaldo si no hay imagen)</Text>
             <TextInput style={styles.modalInput} value={stageEmoji} onChangeText={setStageEmoji} placeholder="Ej. 🐸" />
 
-            <Text style={styles.fieldLabel}>URL de la imagen (opcional)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={stageImageUrl}
-              onChangeText={setStageImageUrl}
-              placeholder="https://..."
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <Text style={styles.fieldLabel}>Imagen de la etapa</Text>
+            <Text style={styles.imageHint}>Selecciona una imagen disponible en assets/images.</Text>
+            <View style={styles.imagePickerGrid}>
+              <TouchableOpacity
+                style={[styles.imageOption, !stageImageUrl && styles.imageOptionSelected]}
+                onPress={() => setStageImageUrl('')}
+              >
+                <Text style={styles.noImageOption}>Sin imagen</Text>
+              </TouchableOpacity>
+              {PET_IMAGE_ASSETS.map((asset) => (
+                <TouchableOpacity
+                  key={asset.key}
+                  style={[styles.imageOption, stageImageUrl === asset.key && styles.imageOptionSelected]}
+                  onPress={() => setStageImageUrl(asset.key)}
+                >
+                  <View style={styles.imagePreviewFrame}>
+                    <PetImage imageUrl={asset.key} width={82} height={72} />
+                  </View>
+                  <Text style={styles.imageOptionLabel} numberOfLines={2}>{asset.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <Text style={styles.fieldLabel}>Puntos de alimento necesarios para llegar aquí</Text>
             <TextInput
@@ -348,7 +368,8 @@ export default function AdminPetOptionsScreen() {
                 <Text style={styles.saveButtonText}>Guardar etapa</Text>
               </TouchableOpacity>
             </View>
-          </View>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -407,6 +428,37 @@ const styles = StyleSheet.create({
   },
   stageRowEmoji: { fontSize: 22, width: 32, textAlign: 'center' },
   stageRowImage: { width: 28, height: 28 },
+  imageHint: { fontSize: 11, color: '#9E9E9E', marginBottom: 8 },
+  imagePickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingBottom: 4,
+  },
+  imageOption: {
+    width: '48%',
+    minHeight: 118,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    backgroundColor: '#FAFAFA',
+    padding: 8,
+    marginBottom: 8,
+  },
+  imageOptionSelected: { borderColor: '#4CAF50', borderWidth: 2, backgroundColor: '#F1F8ED' },
+  imagePreviewFrame: {
+    width: '100%',
+    height: 78,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF3EF',
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
+  imageOptionLabel: { color: '#444', fontSize: 11, marginTop: 6, textAlign: 'center', lineHeight: 14 },
+  noImageOption: { color: '#888', fontSize: 11, textAlign: 'center' },
   stageRowName: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.8)' },
   stageRowMinGrowth: { fontSize: 11, color: '#9E9E9E', marginTop: 1 },
   modalActions: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
@@ -423,5 +475,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
+  stageModalScroll: { width: '100%', maxHeight: '90%' },
+  stageModalScrollContent: { flexGrow: 1, justifyContent: 'center' },
   stageModalCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, width: '100%', maxWidth: 340 },
 });

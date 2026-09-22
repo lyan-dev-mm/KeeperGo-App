@@ -41,7 +41,6 @@ export default function RegisterScreen(): JSX.Element {
   const userId = user?.id;
   const hasLoaded = useRef(false);
 
-  // ✅ Usar store directamente
   const { saveRegistro } = useBitacoraStore();
 
   if (!userId) {
@@ -124,7 +123,6 @@ export default function RegisterScreen(): JSX.Element {
 
     try {
       const result = await saveRegistro(registroData);
-      console.log('📊 Resultado guardado:', result); 
       
       if (result) {
         Alert.alert('¡Bien!', '¡Emoción registrada con éxito!', [
