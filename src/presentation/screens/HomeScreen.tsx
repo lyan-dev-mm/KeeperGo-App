@@ -33,18 +33,46 @@ export default function HomeScreen() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
 
-  const fullName = profile?.generalInfo
-    ? `${profile.generalInfo.nombres} ${profile.generalInfo.primerApellido} ${profile.generalInfo.segundoApellido}`.trim()
-    : profile?.professionalInfo?.professionalName ||
-      profile?.institutionInfo?.institutionName ||
-      (user?.nombres
-        ? `${user.nombres} ${user.primerApellido} ${user.segundoApellido}`.trim()
-        : user?.name || '');
+  const username = profile?.generalInfo?.username?.trim();
 
-  const firstName =
-    profile?.generalInfo?.nombres?.split(' ')[0] ||
-    user?.nombres?.split(' ')[0] ||
-    user?.name?.split(' ')[0] ||
+  const realNameFromProfile = profile?.generalInfo
+    ? [profile.generalInfo.nombres, profile.generalInfo.primerApellido, profile.generalInfo.segundoApellido]
+        .filter((val) => Boolean(val) && val !== 'undefined')
+        .join(' ')
+        .trim()
+    : '';
+
+  const realNameFromUser = user
+    ? [user.nombres, user.primerApellido, user.segundoApellido]
+        .filter((val) => Boolean(val) && val !== 'undefined')
+        .join(' ')
+        .trim()
+    : '';
+
+  const realFullName =
+    realNameFromProfile ||
+    profile?.professionalInfo?.professionalName ||
+    profile?.institutionInfo?.institutionName ||
+    realNameFromUser ||
+    (user?.name && user.name !== 'undefined' ? user.name : '');
+
+  const displayName =
+    (username && username !== 'undefined' ? username : '') ||
+    realFullName ||
+    user?.email?.split('@')[0] ||
+    'Usuario';
+
+  const greetingName =
+    (username && username !== 'undefined' ? username.split(' ')[0] : '') ||
+    (profile?.generalInfo?.nombres && profile.generalInfo.nombres !== 'undefined'
+      ? profile.generalInfo.nombres.split(' ')[0]
+      : '') ||
+    (user?.nombres && user.nombres !== 'undefined'
+      ? user.nombres.split(' ')[0]
+      : '') ||
+    (user?.name && user.name !== 'undefined'
+      ? user.name.split(' ')[0]
+      : '') ||
     user?.email?.split('@')[0] ||
     'Usuario';
 
@@ -117,7 +145,7 @@ export default function HomeScreen() {
           */}
         </View>
 
-        <Text style={styles.greeting}>Hola, {firstName}!</Text>
+        <Text style={styles.greeting}>Hola, {greetingName}!</Text>
 
         <Text style={styles.subGreeting}>
           Describe tu día a Kii
@@ -169,7 +197,7 @@ export default function HomeScreen() {
       <SideDrawer
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
-        userName={fullName || firstName}
+        userName={displayName}
         profileImage={profileImageUrl}
         menuItems={menuItems}
       />

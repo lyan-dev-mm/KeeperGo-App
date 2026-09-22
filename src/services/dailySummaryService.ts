@@ -8,6 +8,41 @@ export interface DailySummaryData {
 
 class DailySummaryService {
   /**
+   * Consulta y recupera el resumen diario (daily_summary) para un usuario y fecha específicos.
+   */
+  async getDailySummary(uid: string, date: string): Promise<DailySummaryData | null> {
+    try {
+      if (!uid || !date) return null;
+
+      const logRef = doc(db, 'users', uid, 'emotion_logs', date);
+      const logSnap = await getDoc(logRef);
+
+      if (!logSnap.exists()) {
+        return null;
+      }
+
+      const data = logSnap.data();
+      const summary = data?.daily_summary;
+
+      if (!summary || typeof summary !== 'object') {
+        return null;
+      }
+
+      if (typeof summary.text !== 'string' || !summary.text.trim()) {
+        return null;
+      }
+
+      return {
+        text: summary.text,
+        generatedAt: typeof summary.generatedAt === 'string' ? summary.generatedAt : ''
+      };
+    } catch (error) {
+      console.error(`[DailySummary] Error al consultar resumen diario para ${date}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Genera y guarda un resumen diario enriquecido utilizando chat_history y emotion_logs.
    */
   async generateAndSaveSummary(uid: string, date: string): Promise<void> {

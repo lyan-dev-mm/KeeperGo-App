@@ -75,7 +75,48 @@ class AIConfigService {
     }
 
     try {
-      // 1. Construir System Prompt con reglas críticas y solicitud de formato JSON estricto
+      // 1. Obtener memoria contextual de resúmenes anteriores (Día -1 y Día -2)
+      let memoryPromptSection = '';
+      const currentUser = auth.currentUser;
+
+      if (currentUser?.uid) {
+        try {
+          const nowDate = new Date();
+          const dayMinus1Date = emotionSummaryService.getPreviousDate(nowDate);
+          const dateMinus1Obj = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate() - 1);
+          const dayMinus2Date = emotionSummaryService.getPreviousDate(dateMinus1Obj);
+
+          const [summaryDayMinus1, summaryDayMinus2] = await Promise.all([
+            dailySummaryService.getDailySummary(currentUser.uid, dayMinus1Date),
+            dailySummaryService.getDailySummary(currentUser.uid, dayMinus2Date)
+          ]).catch(err => {
+            console.error('[AIConfig] Error consultando resúmenes de días anteriores:', err);
+            return [null, null];
+          });
+
+          const memoryBlocks: string[] = [];
+
+          if (summaryDayMinus1?.text) {
+            memoryBlocks.push(`[Resumen del día anterior (${dayMinus1Date})]:\n${summaryDayMinus1.text}`);
+          }
+
+          if (summaryDayMinus2?.text) {
+            memoryBlocks.push(`[Resumen de hace dos días (${dayMinus2Date})]:\n${summaryDayMinus2.text}`);
+          }
+
+          if (memoryBlocks.length > 0) {
+            memoryPromptSection = `\n\nMEMORIA CONTEXTUAL DE DÍAS ANTERIORES:
+Los siguientes resúmenes corresponden a conversaciones y análisis emocionales de días anteriores. Úsalos únicamente como contexto para comprender la continuidad de la conversación actual. No los presentes como hechos actuales si no corresponden al presente.
+
+${memoryBlocks.join('\n\n')}`;
+          }
+        } catch (memErr) {
+          console.error('[AIConfig] Error al procesar memoria contextual:', memErr);
+          memoryPromptSection = '';
+        }
+      }
+
+      // 2. Construir System Prompt con reglas críticas, memoria contextual y formato JSON estricto
       const systemPrompt = `Eres Kii, una asistente de escucha y acompañamiento empático de primer contacto para KeeperGo.
 Tu función es escuchar, responder empáticamente y proporcionar acompañamiento conversacional.
 
@@ -98,7 +139,7 @@ DEBES RESPONDER EXCLUSIVAMENTE EN FORMATO JSON CON ESTA ESTRUCTURA:
     {"name": "emocion2", "score": 0.XX}
   ]
 }
-Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los scores deben ser números entre 0 y 1.`;
+Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los scores deben ser números entre 0 y 1.${memoryPromptSection}`;
 
       // 2. Llamada unificada a OpenAI (gpt-4o-mini) con JSON Mode
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -155,7 +196,7 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
       top_emotions = top_emotions
         .filter((e: any) => typeof e.name === 'string' && typeof e.score === 'number')
         .map((e: any) => ({ name: e.name, score: Math.min(1, Math.max(0, e.score)) }))
-        .sort((a, b) => b.score - a.score);
+        .sort((a: { score: number }, b: { score: number }) => b.score - a.score);
 
       if (top_emotions.length > 0) {
         dominant_emotion = top_emotions[0].name;
@@ -167,7 +208,6 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
       };
 
       // 4. Persistencia en Firestore (Estructura Diaria por Periodos)
-      const currentUser = auth.currentUser;
       if (currentUser && top_emotions.length > 0) {
         try {
           const uid = currentUser.uid;
@@ -189,12 +229,8 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
           const day = String(now.getDate()).padStart(2, '0');
           const dateId = `${year}-${month}-${day}`;
 
-          // Forzar la obtención de la hora local del dispositivo (0-23)
-          // ignorando si el entorno JS está en UTC.
-          const hour = parseInt(new Intl.DateTimeFormat('en-US', {
-            hour: 'numeric',
-            hour12: false
-          }).format(now));
+          // Hora local del dispositivo (0-23)
+          const hour = now.getHours();
 
           // Determinar periodo del día (Basado estrictamente en hora local del dispositivo)
           let period: 'morning' | 'afternoon' | 'evening';

@@ -9,6 +9,7 @@ export interface UserProfileEntity {
     publicId: string;
   };
   generalInfo?: {
+    username?: string;
     nombres: string;
     primerApellido: string;
     segundoApellido: string;
@@ -17,11 +18,18 @@ export interface UserProfileEntity {
   professionalInfo?: {
     professionalName: string;
     specialty: string;
+    carrera?: string;
     description?: string;
     professionalDetails?: string;
     licenseNumber?: string;
     curp?: string;
     professionalVerified?: boolean;
+    institucion?: string;
+    academicDetails?: {
+      nivelEducativo?: string;
+      areaConocimiento?: string;
+      subareaConocimiento?: string;
+    };
   };
   institutionInfo?: {
     institutionName: string;

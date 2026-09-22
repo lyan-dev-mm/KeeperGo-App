@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../../constants/Colors';
 import { pickAndUploadImageToCloudinary } from '../../../infrastructure/cloudinary/cloudinaryUploadService';
+import { getUserProfile } from '../../../infrastructure/firebase/userProfileService';
 import { CustomToast, ToastType } from '../common/CustomToast';
 
 const SUPPORTED_FORMATS = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
@@ -13,9 +14,13 @@ interface NormalProfileFormProps {
 }
 
 export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) {
-  const [nombres, setNombres] = useState('');
-  const [primerApellido, setPrimerApellido] = useState('');
-  const [segundoApellido, setSegundoApellido] = useState('');
+  const [existingGeneralInfo, setExistingGeneralInfo] = useState<{
+    nombres: string;
+    primerApellido: string;
+    segundoApellido: string;
+  }>({ nombres: '', primerApellido: '', segundoApellido: '' });
+
+  const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [phone, setPhone] = useState('');
   const [photo, setPhoto] = useState<{ url: string; publicId: string } | null>(null);
@@ -29,15 +34,50 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
     type: 'info',
   });
 
+  useEffect(() => {
+    let isMounted = true;
+    getUserProfile()
+      .then((profile) => {
+        if (isMounted && profile) {
+          if (profile.generalInfo) {
+            setExistingGeneralInfo({
+              nombres: profile.generalInfo.nombres || '',
+              primerApellido: profile.generalInfo.primerApellido || '',
+              segundoApellido: profile.generalInfo.segundoApellido || '',
+            });
+            if (profile.generalInfo.username) {
+              setUsername(profile.generalInfo.username);
+            }
+            if (profile.generalInfo.shortDescription) {
+              setBio(profile.generalInfo.shortDescription);
+            }
+          }
+          if (profile.phone) {
+            setPhone(profile.phone);
+          }
+          if (profile.profileImage) {
+            setPhoto(profile.profileImage);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('No se pudo pre-cargar el perfil existente:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const showToast = (message: string, type: ToastType) => {
     setToast({ visible: true, message, type });
   };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!nombres.trim()) newErrors.nombres = 'El nombre es obligatorio';
-    if (!primerApellido.trim()) newErrors.primerApellido = 'El primer apellido es obligatorio';
-    if (!segundoApellido.trim()) newErrors.segundoApellido = 'El segundo apellido es obligatorio';
+    if (!username.trim()) {
+      newErrors.username = 'El nombre de usuario es obligatorio';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -48,12 +88,13 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
         profileType: 'normal',
         phone: phone || undefined,
         generalInfo: {
-          nombres,
-          primerApellido,
-          segundoApellido,
-          shortDescription: bio
+          nombres: existingGeneralInfo.nombres,
+          primerApellido: existingGeneralInfo.primerApellido,
+          segundoApellido: existingGeneralInfo.segundoApellido,
+          username: username.trim(),
+          shortDescription: bio,
         },
-        profileImage: photo
+        profileImage: photo,
       });
     }
   };
@@ -62,7 +103,6 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
     try {
       setIsUploading(true);
 
-      // Importamos el servicio de selección para validar el formato antes de subir
       const { pickImageFromLibrary } = require('../../../infrastructure/media/imagePickerService');
       const selectedImage = await pickImageFromLibrary();
 
@@ -71,7 +111,6 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
         return;
       }
 
-      // VALIDACIÓN DE FORMATO
       const mimeType = selectedImage.mimeType || '';
       if (!SUPPORTED_FORMATS.includes(mimeType.toLowerCase())) {
         showToast('Formato de imagen no soportado. Usa JPG, PNG o WEBP.', 'error');
@@ -79,7 +118,6 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
         return;
       }
 
-      // Si el formato es correcto, procedemos a subir a Cloudinary
       const { uploadImageToCloudinary } = require('../../../infrastructure/cloudinary/cloudinaryService');
       const uploadedImage = await uploadImageToCloudinary({
         uri: selectedImage.uri,
@@ -90,7 +128,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
       if (uploadedImage) {
         setPhoto({
           url: uploadedImage.secure_url,
-          publicId: uploadedImage.public_id
+          publicId: uploadedImage.public_id,
         });
         showToast('Imagen actualizada con éxito', 'success');
       }
@@ -123,36 +161,15 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Nombres *</Text>
+        <Text style={styles.label}>Nombre de usuario / Alias *</Text>
         <TextInput
-          style={[styles.input, errors.nombres && styles.inputError]}
-          placeholder="Tus nombres"
-          value={nombres}
-          onChangeText={setNombres}
+          style={[styles.input, errors.username && styles.inputError]}
+          placeholder="Tu alias público (ej. JuanP)"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
         />
-        {errors.nombres && <Text style={styles.errorText}>{errors.nombres}</Text>}
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.label}>Primer Apellido *</Text>
-        <TextInput
-          style={[styles.input, errors.primerApellido && styles.inputError]}
-          placeholder="Tu primer apellido"
-          value={primerApellido}
-          onChangeText={setPrimerApellido}
-        />
-        {errors.primerApellido && <Text style={styles.errorText}>{errors.primerApellido}</Text>}
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.label}>Segundo Apellido *</Text>
-        <TextInput
-          style={[styles.input, errors.segundoApellido && styles.inputError]}
-          placeholder="Tu segundo apellido"
-          value={segundoApellido}
-          onChangeText={setSegundoApellido}
-        />
-        {errors.segundoApellido && <Text style={styles.errorText}>{errors.segundoApellido}</Text>}
+        {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
       </View>
 
       <View style={styles.field}>

@@ -13,7 +13,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { delay } from '../../utils/asyncUtils';
 import { aiConfigService } from '../../services/aiConfigService';
 import { dailySummaryService } from '../../services/dailySummaryService';
 import { auth } from '../../infrastructure/firebase/firebaseConfig';
@@ -31,20 +30,7 @@ const GREETING: ChatMessage = {
   text: 'Hola, como puedo ayudarte estoy aquí para ti, para escucharte y que me platiques de las cosas de tu día a día, espero que puedas confiar en mí ❤️',
 };
 
-// Guion fijo de demo — Kii siempre responde con esto la primera vez que
-// alguien escribe, sin importar el contenido del mensaje (no hay IA real).
-const SCRIPTED_RESPONSE_1 =
-  'Lamento mucho que te sientas así. Es completamente válido estar abrumado por la presión, pero no tienes que pasar por esto solo. Tu bienestar es la prioridad.';
 
-const SCRIPTED_RESPONSE_2: ChatMessage = {
-  id: 'scripted-2',
-  sender: 'kii',
-  text: 'Tengo unas opciones de especialistas que encontré cerca de tu ubicación',
-  linkLabel: 'Haz clic aquí',
-};
-
-const FOLLOW_UP_RESPONSE =
-  'Estoy aquí para ti. Cuéntame lo que necesites, con calma.';
 
 function KiiAvatar({ size = 40 }: { size?: number }) {
   return (
