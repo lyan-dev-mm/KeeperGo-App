@@ -149,4 +149,21 @@ export class CommunityFeedRepositoryImpl implements CommunityFeedRepository {
     });
     return replyRef.id;
   }
+    async updateReply(
+    communityId: string,
+    postId: string,
+    replyId: string,
+    newText: string
+  ): Promise<void> {
+    const replyRef = doc(db, 'communities', communityId, 'posts', postId, 'replies', replyId);
+    await updateDoc(replyRef, {
+      text: newText,
+      editedAt: serverTimestamp(),
+    });
+  }
+
+  async deleteReply(communityId: string, postId: string, replyId: string): Promise<void> {
+    const replyRef = doc(db, 'communities', communityId, 'posts', postId, 'replies', replyId);
+    await deleteDoc(replyRef);
+  }
 }

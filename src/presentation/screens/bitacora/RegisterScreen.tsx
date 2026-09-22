@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, JSX } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -7,13 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Image,
   StatusBar,
   Alert,
 } from 'react-native';
-
-// Componentes
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, EMOCIONES} from '../../../../constants/colors';
 import EmotionWheel from '../../components/bitacora/EmotionWheel';
@@ -21,24 +17,13 @@ import IntensitySlider from '../../components/bitacora/IntensitySlider';
 import ConfirmationPanel from '../../components/bitacora/ConfirmationPanel'; 
 import ReflectionForm from '../../components/bitacora/ReflectionForm'; 
 import { EmotionData } from '../../components/bitacora/ConfirmationPanel';
-// Hooks
-import { useBitacora } from '../../hooks/useBitacora';
+import { useAuth } from '../../contexts/AuthContext';
 import { useBitacoraStore } from '../../store/bitacoraStore';
 
-interface EmotionType {
-  id: string;
-  label: string;
-  color: string;
-  image: any;
-  emoji: string;
-}
-
 export default function RegisterScreen(): JSX.Element {
-  // Obtener parámetros de navegación
   const router = useRouter();
   const params = useLocalSearchParams();
   
-
   const fecha = params.fecha as string | undefined;
   const registroParam = params.registro as string | undefined;
   const fechaDate: Date = fecha ? new Date(fecha) : new Date();
@@ -51,10 +36,22 @@ export default function RegisterScreen(): JSX.Element {
   const [note, setNote] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
-
+  
+  const { user } = useAuth();
+  const userId = user?.id;
   const hasLoaded = useRef(false);
 
   const { saveRegistro } = useBitacoraStore();
+
+  if (!userId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
+          <Text>Error: Usuario no autenticado</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   useEffect(() => {
     if (registroExistente && !hasLoaded.current) {
@@ -69,7 +66,6 @@ export default function RegisterScreen(): JSX.Element {
     }
   }, [registroExistente]);
 
-  
   const handleSelectEmotion = (emotion: EmotionData): void => {
     setSelectedEmotion(emotion);
     setTimeout(() => {
@@ -79,7 +75,7 @@ export default function RegisterScreen(): JSX.Element {
 
   const handleSelectEnergy = (value: number): void => {
     const safeValue = typeof value === 'number' && !isNaN(value) ? value : 5;
-    console.log(' Energía seleccionada:', safeValue);
+    console.log('Energía seleccionada:', safeValue);
     setSelectedEnergy(safeValue); 
   };
 
@@ -114,8 +110,6 @@ export default function RegisterScreen(): JSX.Element {
 
     setIsSaving(true);
 
-    const selectedDate = fechaDate;
-
     const registroData = {
       id: registroExistente?.id || `reg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       emocion: selectedEmotion.id,
@@ -124,18 +118,14 @@ export default function RegisterScreen(): JSX.Element {
       energia: selectedEnergy,
       energiaLabel: selectedEnergy >= 7 ? 'Alta' : selectedEnergy >= 4 ? 'Media' : 'Baja',
       nota: note.trim() || (reflectionText ? reflectionText.trim() : ''),
-      fecha: fechaDate,//selectedDate,
-      //id: registroExistente?.id,
+      fecha: fechaDate,
     };
 
-    
     try {
       const result = await saveRegistro(registroData);
-
-       console.log('📊 Resultado guardado:', result); 
       
       if (result) {
-        Alert.alert('¡Bien! ', '¡Emoción registrada con éxito!', [
+        Alert.alert('¡Bien!', '¡Emoción registrada con éxito!', [
           {
             text: 'Volver',
             onPress: () => {
@@ -166,7 +156,6 @@ export default function RegisterScreen(): JSX.Element {
     setStep('emotion');
     setShowConfirmation(false);
   };
-
   // ========== RENDER POR PASO ==========
 
   const renderEmotionStep = (): JSX.Element => (

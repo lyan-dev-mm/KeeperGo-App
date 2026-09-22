@@ -5,6 +5,8 @@ export type CommunityMemberRole = 'owner' | 'member';
 export interface CommunityMemberEntity {
   uid: string;
   role: CommunityMemberRole;
+  userName: string | null;   // <-- NUEVO
+  userColor: string | null;  // <-- NUEVO
   joinedAt: Timestamp | null;
 }
 

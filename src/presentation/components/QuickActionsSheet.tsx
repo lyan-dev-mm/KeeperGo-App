@@ -36,6 +36,8 @@ export function QuickActionsSheet({ visible, onClose }: QuickActionsSheetProps) 
       router.push('/(tabs)/habits');
     } else if (key === 'emocion') {
       router.push('/(tabs)/bitacora');
+    } else if (key === 'actividad') {
+      router.push('/(tabs)/habits');
     } 
     else {
       showComingSoon();
