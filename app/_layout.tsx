@@ -28,11 +28,13 @@ export default function RootLayout() {
             <Stack.Screen name="admin" options={{ headerShown: false }} />
             <Stack.Screen name="admin-messages" options={{ headerShown: false }} />
             <Stack.Screen name="admin-milestones" options={{ headerShown: false }} />
+            <Stack.Screen name="admin-pet-options" options={{ headerShown: false }} />
             <Stack.Screen name="admin-users" options={{ headerShown: false }} />
             <Stack.Screen name="ask-location" options={{ headerShown: false }} />
-          <Stack.Screen name="specialists" options={{ headerShown: false }} />
-          <Stack.Screen name="specialist-profile" options={{ headerShown: false }} />
-          <Stack.Screen name="specialist-chat" options={{ headerShown: false }} />
+            <Stack.Screen name="verify-email" options={{ headerShown: false }} />
+            <Stack.Screen name="specialists" options={{ headerShown: false }} />
+            <Stack.Screen name="specialist-profile" options={{ headerShown: false }} />
+            <Stack.Screen name="specialist-chat" options={{ headerShown: false }} />
           </Stack>
         </HabitsProvider>
       </PetActivityProvider>

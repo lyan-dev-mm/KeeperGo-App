@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.primaryDark || '#5AC155',
+    color: '#5AC155',
     marginBottom: 15,
   },
   inputWithButton: {

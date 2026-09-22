@@ -19,24 +19,39 @@ import { Colors } from '../../../constants/Colors';
 
 export default function RegisterScreen() {
   const { register, isLoading, errorMessage } = useAuth();
+
   const [nombres, setNombres] = useState('');
   const [primerApellido, setPrimerApellido] = useState('');
   const [segundoApellido, setSegundoApellido] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
 
   const handleRegister = async () => {
-    const nombresErr = !nombres.trim() ? 'Ingresa tus nombres' : null;
-    const primerErr = !primerApellido.trim() ? 'Ingresa tu primer apellido' : null;
-    const segundoErr = !segundoApellido.trim() ? 'Ingresa tu segundo apellido' : null;
+    const nombresErr = !nombres.trim()
+      ? 'Ingresa tus nombres'
+      : null;
+
+    const primerErr = !primerApellido.trim()
+      ? 'Ingresa tu primer apellido'
+      : null;
+
+    const segundoErr = !segundoApellido.trim()
+      ? 'Ingresa tu segundo apellido'
+      : null;
+
     const emailErr = Validators.validateEmail(email);
     const passErr = Validators.validatePassword(password);
-    const confirmErr = Validators.validateConfirmPassword(confirm, password);
+    const confirmErr = Validators.validateConfirmPassword(
+      confirm,
+      password
+    );
 
     setErrors({
       nombres: nombresErr,
@@ -47,22 +62,48 @@ export default function RegisterScreen() {
       confirm: confirmErr,
     });
 
-    if (nombresErr || primerErr || segundoErr || emailErr || passErr || confirmErr) return;
-
-    if (!acceptTerms) {
-      Alert.alert('Error', 'Debes aceptar los Términos y Condiciones');
+    if (
+      nombresErr ||
+      primerErr ||
+      segundoErr ||
+      emailErr ||
+      passErr ||
+      confirmErr
+    ) {
       return;
     }
 
-    const success = await register(email.trim(), password.trim(), {
-      nombres: nombres.trim(),
-      primerApellido: primerApellido.trim(),
-      segundoApellido: segundoApellido.trim(),
-    });
-    if (success) {
-      router.replace('/ask-location');
+    if (!acceptTerms) {
+      Alert.alert(
+        'Error',
+        'Debes aceptar los Términos y Condiciones'
+      );
+      return;
+    }
+
+    const result = await register(
+      email.trim(),
+      password.trim(),
+      {
+        nombres: nombres.trim(),
+        primerApellido: primerApellido.trim(),
+        segundoApellido: segundoApellido.trim(),
+      }
+    );
+
+    if (result) {
+      // El usuario debe verificar su correo antes de continuar.
+      router.replace({
+        pathname: '/verify-email',
+        params: {
+          next: 'ask-location',
+        },
+      });
     } else {
-      Alert.alert('Error', errorMessage ?? 'Error inesperado');
+      Alert.alert(
+        'Error',
+        errorMessage ?? 'Error inesperado'
+      );
     }
   };
 
@@ -77,7 +118,12 @@ export default function RegisterScreen() {
           value={nombres}
           onChangeText={setNombres}
         />
-        {errors.nombres && <Text style={styles.error}>{errors.nombres}</Text>}
+
+        {errors.nombres && (
+          <Text style={styles.error}>
+            {errors.nombres}
+          </Text>
+        )}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -87,7 +133,12 @@ export default function RegisterScreen() {
           value={primerApellido}
           onChangeText={setPrimerApellido}
         />
-        {errors.primerApellido && <Text style={styles.error}>{errors.primerApellido}</Text>}
+
+        {errors.primerApellido && (
+          <Text style={styles.error}>
+            {errors.primerApellido}
+          </Text>
+        )}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -97,7 +148,12 @@ export default function RegisterScreen() {
           value={segundoApellido}
           onChangeText={setSegundoApellido}
         />
-        {errors.segundoApellido && <Text style={styles.error}>{errors.segundoApellido}</Text>}
+
+        {errors.segundoApellido && (
+          <Text style={styles.error}>
+            {errors.segundoApellido}
+          </Text>
+        )}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -109,7 +165,12 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        {errors.email && <Text style={styles.error}>{errors.email}</Text>}
+
+        {errors.email && (
+          <Text style={styles.error}>
+            {errors.email}
+          </Text>
+        )}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -120,10 +181,17 @@ export default function RegisterScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
+
         <Text style={styles.helper}>
-          Debe tener 8 caracteres mínimo, una mayúscula, un número y un carácter especial.
+          Debe tener 8 caracteres mínimo, una mayúscula,
+          un número y un carácter especial.
         </Text>
-        {errors.password && <Text style={styles.error}>{errors.password}</Text>}
+
+        {errors.password && (
+          <Text style={styles.error}>
+            {errors.password}
+          </Text>
+        )}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -134,50 +202,89 @@ export default function RegisterScreen() {
           onChangeText={setConfirm}
           secureTextEntry
         />
-        {errors.confirm && <Text style={styles.error}>{errors.confirm}</Text>}
+
+        {errors.confirm && (
+          <Text style={styles.error}>
+            {errors.confirm}
+          </Text>
+        )}
       </View>
 
       <View style={styles.fieldGroup}>
-        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() => setShowDatePicker(true)}
+        >
           <Text style={styles.dateText}>
-            {birthDate ? birthDate.toLocaleDateString() : 'Fecha de nacimiento (opcional)'}
+            {birthDate
+              ? birthDate.toLocaleDateString()
+              : 'Fecha de nacimiento (opcional)'}
           </Text>
         </TouchableOpacity>
+
         {showDatePicker && (
           <DateTimePicker
             value={birthDate ?? new Date(2000, 0, 1)}
             mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            display={
+              Platform.OS === 'ios'
+                ? 'spinner'
+                : 'default'
+            }
             maximumDate={new Date()}
             onChange={(_, date) => {
               setShowDatePicker(false);
-              if (date) setBirthDate(date);
+
+              if (date) {
+                setBirthDate(date);
+              }
             }}
           />
         )}
       </View>
 
-      <TouchableOpacity style={styles.checkboxRow} onPress={() => setAcceptTerms(!acceptTerms)}>
+      <TouchableOpacity
+        style={styles.checkboxRow}
+        onPress={() => setAcceptTerms(!acceptTerms)}
+      >
         <Ionicons
-          name={acceptTerms ? 'checkbox' : 'square-outline'}
+          name={
+            acceptTerms
+              ? 'checkbox'
+              : 'square-outline'
+          }
           size={22}
           color={Colors.primary}
         />
+
         <Text style={styles.checkboxText}>
           Acepto los{' '}
+
           <Text
             style={styles.link}
             onPress={() =>
-              router.push({ pathname: '/terms', params: { title: 'Términos y Condiciones' } })
+              router.push({
+                pathname: '/terms',
+                params: {
+                  title: 'Términos y Condiciones',
+                },
+              })
             }
           >
             Términos y Condiciones
           </Text>{' '}
+
           y las{' '}
+
           <Text
             style={styles.link}
             onPress={() =>
-              router.push({ pathname: '/terms', params: { title: 'Políticas de Privacidad' } })
+              router.push({
+                pathname: '/terms',
+                params: {
+                  title: 'Políticas de Privacidad',
+                },
+              })
             }
           >
             Políticas de privacidad
@@ -186,18 +293,31 @@ export default function RegisterScreen() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={isLoading}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleRegister}
+        disabled={isLoading}
+      >
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Siguiente</Text>
+          <Text style={styles.buttonText}>
+            Siguiente
+          </Text>
         )}
       </TouchableOpacity>
 
       <View style={styles.footerRow}>
         <Text>¿Ya tienes cuenta? </Text>
-        <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
-          <Text style={styles.link}>Inicia sesión</Text>
+
+        <TouchableOpacity
+          onPress={() =>
+            router.replace('/(auth)/login')
+          }
+        >
+          <Text style={styles.link}>
+            Inicia sesión
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -211,15 +331,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingVertical: 40,
   },
+
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 32,
   },
+
   fieldGroup: {
     marginBottom: 18,
   },
+
   input: {
     borderWidth: 1,
     borderColor: '#CCC',
@@ -227,12 +350,42 @@ const styles = StyleSheet.create({
     padding: 14,
     justifyContent: 'center',
   },
-  dateText: { color: '#000' },
-  helper: { fontSize: 12, color: '#888', marginTop: 6 },
-  error: { color: Colors.error, fontSize: 12, marginTop: 6 },
-  checkboxRow: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 20 },
-  checkboxText: { flex: 1, marginLeft: 8, fontSize: 14, lineHeight: 20 },
-  link: { color: Colors.primary, fontWeight: 'bold', textDecorationLine: 'underline' },
+
+  dateText: {
+    color: '#000',
+  },
+
+  helper: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 6,
+  },
+
+  error: {
+    color: Colors.error,
+    fontSize: 12,
+    marginTop: 6,
+  },
+
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 20,
+  },
+
+  checkboxText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  link: {
+    color: Colors.primary,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+
   button: {
     backgroundColor: Colors.primary,
     borderRadius: 10,
@@ -241,6 +394,16 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 20,
   },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

@@ -25,7 +25,7 @@ interface RouteParams {
 
 export default function BitacoraScreen(): JSX.Element {
   const router = useRouter();
-  const params = useLocalSearchParams<RouteParams>();
+  const params = useLocalSearchParams();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState<boolean>(false);
   

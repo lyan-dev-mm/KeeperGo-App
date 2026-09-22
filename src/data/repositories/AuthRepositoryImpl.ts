@@ -3,6 +3,8 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut,
+  sendEmailVerification,
+  reload,
   AuthError,
 } from 'firebase/auth';
 import { auth } from '../../infrastructure/firebase/firebaseConfig';
@@ -33,37 +35,80 @@ const userProfileRepository = new UserProfileRepositoryImpl();
 
 export class AuthRepositoryImpl implements AuthRepository {
   async login(email: string, password: string): Promise<UserEntity | null> {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const user = result.user;
-      // Nota: Aquí los nombres se recuperarían idealmente de Firestore en un flujo real,
-      // por ahora devolvemos la estructura pero con datos vacíos o parciales si no se consultan.
-      return {
-        id: user.uid,
+    const result = await signInWithEmailAndPassword(auth, email, password).catch(
+      (error) => {
+        throw new Error(handleFirebaseError(error as AuthError));
+      }
+    );
+
+    const user = result.user;
+
+    // Auto-reparación: si esta cuenta no tiene un documento de perfil
+    // en Firestore, se crea para que aparezca en el panel de administración.
+    let profile = await userProfileRepository.getUserProfile(user.uid);
+
+    if (!profile) {
+      await userProfileRepository.createUserProfile({
+        uid: user.uid,
         email: user.email ?? '',
-        nombres: user.displayName ?? '',
-        primerApellido: '',
-        segundoApellido: '',
-      };
-    } catch (error) {
-      throw new Error(handleFirebaseError(error as AuthError));
+        profileType: 'normal',
+        generalInfo: {
+          nombres: user.displayName ?? '',
+          primerApellido: '',
+          segundoApellido: '',
+        },
+        disabled: false,
+      });
+
+      profile = await userProfileRepository.getUserProfile(user.uid);
     }
+
+    // Verificar si la cuenta fue deshabilitada por un administrador.
+    if (profile?.disabled) {
+      await signOut(auth);
+      throw new Error(
+        'Tu cuenta ha sido dada de baja. Contacta al administrador.'
+      );
+    }
+
+    return {
+      id: user.uid,
+      email: user.email ?? '',
+      name: user.displayName ?? '',
+      nombres: user.displayName ?? '',
+      primerApellido: '',
+      segundoApellido: '',
+      emailVerified: user.emailVerified,
+    };
   }
 
   async register(
     email: string,
     password: string,
-    names: { nombres: string; primerApellido: string; segundoApellido: string }
+    names: {
+      nombres: string;
+      primerApellido: string;
+      segundoApellido: string;
+    }
   ): Promise<UserEntity | null> {
     try {
       const { nombres, primerApellido, segundoApellido } = names;
+
       const fullName = `${nombres} ${primerApellido} ${segundoApellido}`.trim();
-      const result = await createUserWithEmailAndPassword(auth, email, password);
 
-      await updateProfile(result.user, { displayName: fullName });
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      // Crea también el documento de perfil en Firestore (colección "userProfiles"),
-      // necesario para que el panel de administración pueda listar usuarios.
+      if (fullName) {
+        await updateProfile(result.user, {
+          displayName: fullName,
+        });
+      }
+
+      // Crear el documento de perfil en Firestore.
       try {
         await userProfileRepository.createUserProfile({
           uid: result.user.uid,
@@ -74,17 +119,33 @@ export class AuthRepositoryImpl implements AuthRepository {
             primerApellido,
             segundoApellido,
           },
+          disabled: false,
         });
-      } catch (err) {
-        console.error('Error al crear userProfile:', err);
+      } catch (profileError) {
+        console.error(
+          '❌ Error al crear el perfil del usuario en Firestore:',
+          profileError
+        );
+      }
+
+      // Enviar correo de verificación.
+      try {
+        await sendEmailVerification(result.user);
+      } catch (verificationError) {
+        console.warn(
+          'No se pudo enviar el correo de verificación al registrar:',
+          verificationError
+        );
       }
 
       return {
         id: result.user.uid,
         email: result.user.email ?? '',
+        name: fullName,
         nombres,
         primerApellido,
         segundoApellido,
+        emailVerified: result.user.emailVerified,
       };
     } catch (error) {
       throw new Error(handleFirebaseError(error as AuthError));
@@ -101,5 +162,35 @@ export class AuthRepositoryImpl implements AuthRepository {
 
   async getRememberMe(): Promise<boolean> {
     return readRememberMe();
+  }
+
+  async sendVerificationEmail(): Promise<void> {
+    if (!auth.currentUser) return;
+
+    await sendEmailVerification(auth.currentUser);
+  }
+
+  async reloadCurrentUser(): Promise<UserEntity | null> {
+    if (!auth.currentUser) return null;
+
+    await reload(auth.currentUser);
+
+    const user = auth.currentUser;
+
+    return {
+      id: user.uid,
+      email: user.email ?? '',
+      name: user.displayName ?? '',
+      nombres: user.displayName ?? '',
+      primerApellido: '',
+      segundoApellido: '',
+      emailVerified: user.emailVerified,
+    };
+  }
+
+  async isAccountDisabled(uid: string): Promise<boolean> {
+    const profile = await userProfileRepository.getUserProfile(uid);
+
+    return profile?.disabled === true;
   }
 }

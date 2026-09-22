@@ -109,7 +109,7 @@ const EJERCICIOS_POR_DEFECTO: EjercicioRespiración[] = [
   {
     id: '4',
     nombre: 'Respiración Alterna (Nadi Shodhana)',
-    tecnica: 'alterna',
+    tecnica: 'cuadrada',
     descripcion: 'Alterna la respiración entre fosas nasales para equilibrar los hemisferios cerebrales.',
     color: '#9B59B6',
     icono: '🔄',
@@ -232,8 +232,8 @@ export const useRelajacionStore = create<RelajacionState>()(
             nota,
           };
 
-          const nuevaSesion = await get().guardarSesion(sesion);
-          
+          await get().guardarSesion(sesion);
+
           set({
             progresoSesion: {
               segundosCompletados: 0,
@@ -241,8 +241,6 @@ export const useRelajacionStore = create<RelajacionState>()(
               completado: false,
             },
           });
-
-          return nuevaSesion;
         },
 
         guardarSesion: async (sesion: Omit<SesionRelajacion, 'id'>) => {

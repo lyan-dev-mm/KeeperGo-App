@@ -3,6 +3,7 @@ export interface UserProfileEntity {
   email: string;
   profileType: 'normal' | 'professional' | 'institution';
   phone?: string;
+  disabled?: boolean;
   profileImage?: {
     url: string;
     publicId: string;

@@ -10,4 +10,7 @@ export interface AuthRepository {
   logout(): Promise<void>;
   setRememberMe(value: boolean): Promise<void>;
   getRememberMe(): Promise<boolean>;
+  sendVerificationEmail(): Promise<void>;
+  reloadCurrentUser(): Promise<UserEntity | null>;
+  isAccountDisabled(uid: string): Promise<boolean>;
 }

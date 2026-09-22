@@ -1,1 +1,1 @@
-export { default } from '../../src/presentation/screens/CommunityRulesScreen';
+export { default } from '../../src/presentation/screens/habitos/CommunityRulesScreen';

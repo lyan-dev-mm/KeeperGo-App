@@ -34,9 +34,9 @@ export default function HabitsScreen() {
     setIsCreating(true);
   };
 
-  const confirmCreateHabit = () => {
+  const confirmCreateHabit = async () => {
     if (newHabitTitle.trim()) {
-      const newId = addHabit(newHabitTitle.trim());
+      const newId = await addHabit(newHabitTitle.trim());
       setIsCreating(false);
       goToHabitDetail(newId);
     }

@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,14 +16,19 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { ProfileCustomizationModal } from '../components/notifications/ProfileCustomizationModal';
 import { ProfileTypeSelector } from '../components/profile/ProfileTypeSelector';
+import { isAdminEmail } from '../../utils/adminUtils';
 
 function showComingSoon() {
-  Alert.alert('Próximamente', 'Estamos trabajando en esto, pronto estará disponible.');
+  Alert.alert(
+    'Próximamente',
+    'Estamos trabajando en esto, pronto estará disponible.'
+  );
 }
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
   const { profile } = useUserProfile();
+
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
@@ -27,22 +39,56 @@ export default function HomeScreen() {
       profile?.institutionInfo?.institutionName ||
       (user?.nombres
         ? `${user.nombres} ${user.primerApellido} ${user.segundoApellido}`.trim()
-        : '');
+        : user?.name || '');
+
   const firstName =
     profile?.generalInfo?.nombres?.split(' ')[0] ||
     user?.nombres?.split(' ')[0] ||
+    user?.name?.split(' ')[0] ||
     user?.email?.split('@')[0] ||
     'Usuario';
+
   const profileImageUrl = profile?.profileImage?.url;
 
   const menuItems: DrawerMenuItem[] = [
-    { label: 'Perfil', onPress: () => setShowProfileModal(true) },
-    { label: 'Comunidad de hábitos', onPress:  () => router.push('/(tabs)/habits') },
-    { label: 'Bitácora de emociones', onPress: () => router.push('/(tabs)/bitacora') },
-    { label: 'Zona de relajación', onPress: () => router.push('/zona-relajacion') },
-    { label: 'Técnicas de Estudio', onPress: showComingSoon },
-    { label: 'Ver planes', onPress: showComingSoon },
-    { label: 'Configuraciones', onPress: showComingSoon },
+    {
+      label: 'Perfil',
+      onPress: () => setShowProfileModal(true),
+    },
+    {
+      label: 'Comunidad de hábitos',
+      onPress: () => router.push('/(tabs)/habits'),
+    },
+    {
+      label: 'Bitácora de emociones',
+      onPress: () => router.push('/(tabs)/bitacora'),
+    },
+    {
+      label: 'Zona de relajación',
+      onPress: () => router.push('/zona-relajacion'),
+    },
+    {
+      label: 'Técnicas de Estudio',
+      onPress: showComingSoon,
+    },
+    {
+      label: 'Ver planes',
+      onPress: showComingSoon,
+    },
+    {
+      label: 'Configuraciones',
+      onPress: showComingSoon,
+    },
+
+    ...(isAdminEmail(user?.email)
+      ? [
+          {
+            label: 'Panel de administración',
+            onPress: () => router.push('/admin'),
+          },
+        ]
+      : []),
+
     {
       label: 'Cerrar sesión',
       onPress: async () => {
@@ -59,15 +105,24 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => setDrawerVisible(true)}>
             <Ionicons name="menu" size={28} color="#333" />
           </TouchableOpacity>
+
           {/**
           <TouchableOpacity onPress={() => setShowProfileModal(true)}>
-            <Ionicons name="notifications-outline" size={28} color="#333" />
+            <Ionicons
+              name="notifications-outline"
+              size={28}
+              color="#333"
+            />
           </TouchableOpacity>
-           */}
+          */}
         </View>
 
         <Text style={styles.greeting}>Hola, {firstName}!</Text>
-        <Text style={styles.subGreeting}>Describe tu día a Kii</Text>
+
+        <Text style={styles.subGreeting}>
+          Describe tu día a Kii
+        </Text>
+
         <View style={{ height: 30 }} />
 
         <Card
@@ -91,10 +146,23 @@ export default function HomeScreen() {
         />
 
         <View style={styles.motivation}>
-          <Ionicons name="paw-outline" size={50} color="#616161" />
-          <Text style={styles.motivationTitle}>Tu mascota te acompaña.</Text>
-          <Text style={styles.motivationSubtitle}>Mientras tu creces el también.</Text>
-          <Text style={styles.motivationBold}>¡Sigue así!</Text>
+          <Ionicons
+            name="paw-outline"
+            size={50}
+            color="#616161"
+          />
+
+          <Text style={styles.motivationTitle}>
+            Tu mascota te acompaña.
+          </Text>
+
+          <Text style={styles.motivationSubtitle}>
+            Mientras tu creces el también.
+          </Text>
+
+          <Text style={styles.motivationBold}>
+            ¡Sigue así!
+          </Text>
         </View>
       </ScrollView>
 
@@ -120,6 +188,7 @@ export default function HomeScreen() {
         onClose={() => setShowTypeSelector(false)}
         onSelect={(type) => {
           setShowTypeSelector(false);
+
           router.push({
             pathname: '/profile-setup',
             params: { type },
@@ -131,20 +200,60 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: '#fff' },
-  container: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 30,
   },
-  greeting: { fontSize: 28, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)' },
-  subGreeting: { fontSize: 16, color: '#9E9E9E', marginTop: 4 },
-  motivation: { alignItems: 'center', marginTop: 40 },
-  motivationTitle: { fontSize: 16, fontWeight: '500', color: 'rgba(0,0,0,0.87)', marginTop: 10 },
-  motivationSubtitle: { fontSize: 14, color: '#9E9E9E' },
-  motivationBold: { fontSize: 14, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)', marginTop: 8 },
+
+  greeting: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'rgba(0,0,0,0.87)',
+  },
+
+  subGreeting: {
+    fontSize: 16,
+    color: '#9E9E9E',
+    marginTop: 4,
+  },
+
+  motivation: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+
+  motivationTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.87)',
+    marginTop: 10,
+  },
+
+  motivationSubtitle: {
+    fontSize: 14,
+    color: '#9E9E9E',
+  },
+
+  motivationBold: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'rgba(0,0,0,0.87)',
+    marginTop: 8,
+  },
+
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',

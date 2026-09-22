@@ -7,4 +7,6 @@ export interface AdminUserSummary {
   level?: number;
   currentStreak?: number;
   bestStreak?: number;
+  unlockedPetIds?: string[];
+  disabled?: boolean;
 }

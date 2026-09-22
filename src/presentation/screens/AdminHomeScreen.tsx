@@ -67,6 +67,12 @@ export default function AdminHomeScreen() {
           <Ionicons name="chevron-forward" size={18} color="#9E9E9E" />
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/admin-pet-options')}>
+          <Ionicons name="paw-outline" size={22} color="#4CAF50" />
+          <Text style={styles.menuItemText}>Editar mascotas seleccionables</Text>
+          <Ionicons name="chevron-forward" size={18} color="#9E9E9E" />
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/admin-users')}>
           <Ionicons name="people-outline" size={22} color="#4CAF50" />
           <Text style={styles.menuItemText}>Ver usuarios registrados</Text>
