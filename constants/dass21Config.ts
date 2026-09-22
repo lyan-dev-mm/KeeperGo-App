@@ -8,7 +8,7 @@ export const DASS21_CONFIG = {
   /** Día del piloto en que se aplica el postest */
   DIA_POSTEST: 5,
   /** Días de espera entre pretest y postest (Día 5 - Día 1 = 4) */
-  DIAS_ESPERA: 0.001,
+  DIAS_ESPERA: 4,
   /** Milisegundos por día */
   MS_POR_DIA: 24 * 60 * 60 * 1000,
   /** Total de preguntas del DASS-21 */

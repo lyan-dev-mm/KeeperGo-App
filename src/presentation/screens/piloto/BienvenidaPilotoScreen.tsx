@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
+import { useSinglePress } from '../../hooks/useSinglePress';
 
 export type BienvenidaVariante = 'inicio' | 'cierre';
 
@@ -27,16 +28,16 @@ const CONTENIDO: Record<BienvenidaVariante, {
   icono: keyof typeof Ionicons.glyphMap;
 }> = {
   inicio: {
-    titulo: '¡Bienvenido/a al piloto!',
-    parrafo1: 'Gracias por ser parte de la prueba piloto de Keeper Go en el ITSCHI.',
-    parrafo2: 'Prueba los módulos todos los días. Recuerda ser amable contigo.',
+    titulo: '¡Bienvenid@ a la prueba piloto!',
+    parrafo1: 'Gracias por ser parte de la prueba piloto de KeeperGo en el ITSCHI.',
+    parrafo2: 'Recuerda navegar por KeeperGo todos los días.',
     boton: '¡Sigamos adelante!',
     icono: 'sparkles',
   },
   cierre: {
     titulo: '¡Último día del piloto!',
     parrafo1: 'Gracias por acompañarnos estos 5 días.',
-    parrafo2: 'Solo faltan unos minutos para completar tu cierre. Tu opinión nos ayuda a mejorar Keeper Go.',
+    parrafo2: 'Es momento de contestar unas preguntas. ¡Tu opinión nos ayudará a medir el impacto de KeeperGo!',
     boton: '¡Empecemos!',
     icono: 'flag',
   },
@@ -47,6 +48,13 @@ export default function BienvenidaPilotoScreen({
   onContinue,
 }: BienvenidaPilotoScreenProps) {
   const content = CONTENIDO[variante];
+
+  // FIX: doble-tap en este botón disparaba onContinue() dos veces (se veía
+  // en los logs "Status guardado" repetido), y el segundo intento de
+  // navegación fallaba con "GO_BACK was not handled" porque ya no había
+  // pantalla a la cual volver. useSinglePress bloquea el segundo toque de
+  // forma síncrona, sin importar qué tan rápido llegue.
+  const [handleContinue, isContinuing] = useSinglePress(onContinue);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -61,15 +69,25 @@ export default function BienvenidaPilotoScreen({
         <Text style={styles.parrafo}>{content.parrafo2}</Text>
 
         <View style={styles.logosContainer}>
-          <Text style={styles.logoPlaceholder}>[Logo ITSCHI]</Text>
-          <Text style={styles.logoPlaceholder}>[Logo Keeper Go]</Text>
+          <Image
+            source={require('../../../../assets/images/logo-keeperGo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.logoPlaceholder}>+</Text>
+          <Image
+            source={require('../../../../assets/images/logo-itschi.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
       </View>
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={onContinue}
+          style={[styles.primaryButton, isContinuing && styles.primaryButtonDisabled]}
+          onPress={handleContinue}
+          disabled={isContinuing}
           activeOpacity={0.85}
         >
           <Text style={styles.primaryText}>{content.boton}</Text>
@@ -115,6 +133,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: '500',
   },
+  logo: {
+    width: 80,
+    height: 80,
+  },
   logosContainer: {
     flexDirection: 'row',
     gap: 24,
@@ -122,14 +144,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoPlaceholder: {
-    fontSize: 12,
+    fontSize: 30,
     fontWeight: '700',
-    color: COLORS.gray[400],
+    color: '#eebe44',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: COLORS.gray[300],
-    borderRadius: 8,
   },
   footer: {
     paddingHorizontal: 24,
@@ -149,6 +168,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.6,
   },
   primaryText: {
     fontSize: 16,

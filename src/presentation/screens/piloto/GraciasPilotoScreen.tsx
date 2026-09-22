@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { useDASS21Store } from '../../store/dass21Store';
+import { useSinglePress } from '../../hooks/useSinglePress';
 
 export default function GraciasPilotoScreen() {
   const router = useRouter();
@@ -21,6 +22,12 @@ export default function GraciasPilotoScreen() {
   const final = responses.find((r) => r.tipo === 'final');
 
   const mostrarResumen = inicial && final;
+
+  // Mismo patrón que en BienvenidaPilotoScreen: evita que un doble-tap
+  // dispare dos navegaciones (router.replace) en quick succession.
+  const [handleVolver, isNavigating] = useSinglePress(() => {
+    router.replace('/(tabs)/home');
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -32,7 +39,7 @@ export default function GraciasPilotoScreen() {
         <Text style={styles.titulo}>¡Gracias por participar!</Text>
 
         <Text style={styles.parrafo}>
-          Tu participación en el piloto de Keeper Go nos ayuda a construir una
+          Tu participación en la prueba piloto de Keeper Go nos ayuda a construir una
           herramienta de acompañamiento en salud mental más humana y accesible.
         </Text>
 
@@ -68,8 +75,9 @@ export default function GraciasPilotoScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => router.replace('/(tabs)/home')}
+          style={[styles.primaryButton, isNavigating && styles.primaryButtonDisabled]}
+          onPress={handleVolver}
+          disabled={isNavigating}
           activeOpacity={0.85}
         >
           <Text style={styles.primaryText}>Volver al inicio</Text>
@@ -176,6 +184,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.6,
   },
   primaryText: {
     fontSize: 16,
