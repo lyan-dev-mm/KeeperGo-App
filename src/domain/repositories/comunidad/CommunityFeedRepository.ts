@@ -21,4 +21,6 @@ export interface CommunityFeedRepository {
     authorName: string,
     text: string
   ): Promise<string>;
+  updateReply(communityId: string, postId: string, replyId: string, newText: string): Promise<void>;
+  deleteReply(communityId: string, postId: string, replyId: string): Promise<void>;
 }

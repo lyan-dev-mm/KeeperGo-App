@@ -44,15 +44,25 @@ import { CommunityActivityEntity } from '../../../domain/entities/comunidad/Comm
 import CreateActivityModal from '../../components/CreateActivityModal';
 import EditFieldModal from '../../components/EditFieldModal';
 
+import { GetCommunityMembersUseCase } from '../../../domain/usecases/comunidad/GetCommunityMembersUseCase';
+import CommunityMembersModal from '../../components/CommunityMembersModal';
+import { UserNotificationRepositoryImpl } from '../../../data/repositories/notifications/UserNotificationRepositoryImpl';
+
 const communityRepository = new CommunityRepositoryImpl();
 const feedRepository = new CommunityFeedRepositoryImpl();
 const activityRepository = new CommunityActivityRepositoryImpl();
+const notificationRepository = new UserNotificationRepositoryImpl();
+
+
 
 const getCommunityDetailUseCase = new GetCommunityDetailUseCase(communityRepository);
 const getCommunityFeedUseCase = new GetCommunityFeedUseCase(feedRepository);
 const getCommunityActivitiesUseCase = new GetCommunityActivitiesUseCase(activityRepository);
 const getPendingJoinRequestsUseCase = new GetPendingJoinRequestsUseCase(communityRepository);
-const respondToJoinRequestUseCase = new RespondToJoinRequestUseCase(communityRepository);
+const respondToJoinRequestUseCase = new RespondToJoinRequestUseCase(
+  communityRepository,
+  notificationRepository
+);
 const createPostUseCase = new CreatePostUseCase(feedRepository);
 const toggleLikePostUseCase = new ToggleLikePostUseCase(feedRepository);
 const toggleActivityParticipationUseCase = new ToggleActivityParticipationUseCase(activityRepository);
@@ -61,6 +71,8 @@ const leaveCommunityUseCase = new LeaveCommunityUseCase(communityRepository);
 const deleteCommunityUseCase = new DeleteCommunityUseCase(communityRepository);
 const updatePostUseCase = new UpdatePostUseCase(feedRepository);
 const deletePostUseCase = new DeletePostUseCase(feedRepository);
+const getCommunityMembersUseCase = new GetCommunityMembersUseCase(communityRepository);
+
 
 type TabKey = 'recientes' | 'actividades' | 'destacados';
 
@@ -140,6 +152,9 @@ export default function CommunityDetailScreen() {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [selectedPostForMenu, setSelectedPostForMenu] = useState<CommunityPostEntity | null>(null);
   const [editingPost, setEditingPost] = useState<CommunityPostEntity | null>(null);
+  const [isMembersModalVisible, setIsMembersModalVisible] = useState(false);
+  const [members, setMembers] = useState<CommunityMemberEntity[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   const loadAll = useCallback(async () => {
     if (!id || !user?.id) return;
@@ -189,6 +204,19 @@ export default function CommunityDetailScreen() {
       await loadAll();
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'No se pudo procesar la solicitud.');
+    }
+  };
+    const handleOpenMembers = async () => {
+    if (!id) return;
+    setIsMembersModalVisible(true);
+    setLoadingMembers(true);
+    try {
+      const result = await getCommunityMembersUseCase.execute(id);
+      setMembers(result);
+    } catch (error) {
+      console.error('Error cargando miembros:', error);
+    } finally {
+      setLoadingMembers(false);
     }
   };
 
@@ -442,8 +470,13 @@ export default function CommunityDetailScreen() {
             size={14}
             color="#8A8A8A"
           />{' '}
-          {community.visibility === 'public' ? 'Grupo público' : 'Grupo privado'} · {community.memberCount}{' '}
-          {community.memberCount === 1 ? 'integrante' : 'integrantes'}
+          {community.visibility === 'public' ? 'Grupo público' : 'Grupo privado'} ·{' '}
+          <Text
+            style={{ color: '#58C759', fontWeight: 'bold' }}
+            onPress={handleOpenMembers}
+          >
+            {community.memberCount} {community.memberCount === 1 ? 'integrante' : 'integrantes'}
+          </Text>
         </Text>
         {!!community.description && <Text style={styles.description}>{community.description}</Text>}
 
@@ -720,6 +753,13 @@ export default function CommunityDetailScreen() {
         multiline
         onClose={() => setEditingPost(null)}
         onSave={handleSavePostEdit}
+      />
+        <CommunityMembersModal
+        visible={isMembersModalVisible}
+        onClose={() => setIsMembersModalVisible(false)}
+        members={members}
+        loading={loadingMembers}
+        communityName={community.name}
       />
     </SafeAreaView>
   );
