@@ -1,4 +1,4 @@
-export const LAST_UPDATED = '[fecha]';
+export const LAST_UPDATED = '[20/08/2026]';
 
 export interface LegalSection {
   heading: string;
@@ -8,7 +8,7 @@ export interface LegalSection {
 export const TERMS_SECTIONS: LegalSection[] = [
   {
     heading: '1. Aceptación de los términos',
-    body: 'Al crear una cuenta o utilizar la aplicación KeeperGo ("la app", "el Servicio"), aceptas estos Términos y Condiciones en su totalidad. Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar la app.\n\nEstos Términos, junto con nuestra Política de Privacidad, forman el acuerdo completo entre tú y [tu nombre / nombre del equipo] ("nosotros", "KeeperGo").',
+    body: 'Al crear una cuenta o utilizar la aplicación KeeperGo ("la app", "el Servicio"), aceptas estos Términos y Condiciones en su totalidad.\n\nEstos Términos, junto con nuestra Política de Privacidad, forman el acuerdo completo entre usted (usuario) y el Equipo de Desarrollo de KeeperGo (desarrolladores).',
   },
   {
     heading: '2. Descripción del servicio',
@@ -28,7 +28,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: '6. Propiedad intelectual',
-    body: 'El nombre "KeeperGo", el diseño, los logotipos, los personajes (como la mascota virtual) y el código de la aplicación son propiedad de [tu nombre / nombre del equipo], salvo el contenido de terceros usado bajo licencia.\n\nNo puedes copiar, modificar, distribuir o crear trabajos derivados de la app sin autorización previa por escrito, salvo lo permitido por la ley aplicable.',
+    body: 'El nombre "KeeperGo", el diseño, los logotipos, los personajes (como la mascota virtual) y el código de la aplicación son propiedad del Equipo de Desarrollo de KeeperGo, salvo el contenido de terceros usado bajo licencia.\n\nNo puedes copiar, modificar, distribuir o crear trabajos derivados de la app sin autorización previa por escrito, salvo lo permitido por la ley aplicable.',
   },
   {
     heading: '7. Disponibilidad del servicio',
@@ -56,18 +56,18 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: '13. Contacto',
-    body: 'Si tienes preguntas sobre estos Términos y Condiciones, contáctanos en:\n\nCorreo: [tu correo de contacto]\nResponsable: [tu nombre / nombre del equipo]',
+    body: 'Si tienes preguntas sobre estos Términos y Condiciones, contáctanos en:\n\nCorreo: keeper.go.support.team@gmail.com \nResponsable: Equipo de Desarrollo KeeperGo',
   },
 ];
 
 export const PRIVACY_SECTIONS: LegalSection[] = [
   {
     heading: 'Resumen',
-    body: 'KeeperGo ("nosotros", "la aplicación") es una aplicación móvil de bienestar y hábitos que te ayuda a registrar tu estado de ánimo, mantener una racha de días activos y acceder a ejercicios de respiración guiada. Esta Política de Privacidad describe qué información recopilamos, cómo la usamos, con quién la compartimos y cuáles son tus derechos sobre ella.',
+    body: 'KeeperGo es una plataforma de bienestar y hábitos que te ayuda a registrar tu estado de ánimo, mantener una racha de días activos y acceder a ejercicios de respiración guiada. Esta Política de Privacidad describe qué información recopilamos, cómo la usamos, con quién la compartimos y cuáles son tus derechos sobre ella.',
   },
   {
     heading: '1. Quiénes somos',
-    body: 'KeeperGo es desarrollada por [tu nombre / nombre del equipo], con domicilio en [ciudad, estado, país]. Puedes contactarnos en [correo de contacto].',
+    body: 'KeeperGo es desarrollada por el Equipo de Desarrollo, con domicilio en Veracruz, México. Puedes contactarnos en keeper.go.support.team@gmail.com.',
   },
   {
     heading: '2. Información que recopilamos',
@@ -95,7 +95,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: '8. Tus derechos (Derechos ARCO)',
-    body: 'Si resides en México, tienes derecho a Acceder, Rectificar, Cancelar y Oponerte al uso de tus datos personales. Para ejercerlos, escríbenos a [correo de contacto].\n\nSi resides en otro país, es posible que tengas derechos adicionales según tu legislación local (por ejemplo, RGPD o CCPA).',
+    body: 'Si resides en México, tienes derecho a Acceder, Rectificar, Cancelar y Oponerte al uso de tus datos personales. Para ejercerlos, escríbenos a keeper.go.support.team@gmail.com.\n\nSi resides en otro país, es posible que tengas derechos adicionales según tu legislación local (por ejemplo, RGPD o CCPA).',
   },
   {
     heading: '9. Menores de edad',
@@ -111,6 +111,6 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: '12. Contacto',
-    body: 'Correo: [keppergo@gmail.xyz]\nResponsable: [KeeperGo]',
+    body: 'Correo: [keeper.go.support.team@gmail.com] \n Responsable: [Equipo de Desarrollo KeeperGo]',
   },
 ];

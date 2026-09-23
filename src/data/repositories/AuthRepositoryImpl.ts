@@ -19,13 +19,19 @@ import { UserProfileRepositoryImpl } from './auth/UserProfileRepositoryImpl';
 function handleFirebaseError(error: AuthError): string {
   switch (error.code) {
     case 'auth/user-not-found':
-      return 'Usuario no encontrado.';
+      return 'No encontramos ese usuario. Revisa el correo electrónico.';
     case 'auth/wrong-password':
-      return 'Contraseña incorrecta.';
+      return 'La contraseña es incorrecta.';
+    case 'auth/invalid-credential':
+      return 'Credenciales inválidas. Revisa el usuario y la contraseña.';
     case 'auth/email-already-in-use':
       return 'Este correo ya está registrado.';
     case 'auth/invalid-email':
       return 'Correo electrónico inválido.';
+    case 'auth/user-disabled':
+      return 'Esta cuenta ha sido deshabilitada.';
+    case 'auth/too-many-requests':
+      return 'Demasiados intentos. Intenta más tarde.';
     default:
       return `Error: ${error.message}`;
   }
@@ -41,26 +47,33 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const user = result.user;
 
-    // Auto-reparación: si esta cuenta no tiene un documento de perfil en
-    // Firestore (por ejemplo, se creó antes de conectar este flujo), lo
-    // creamos aquí para que aparezca en el panel de admin.
-    let profile = await userProfileRepository.getUserProfile(user.uid);
-    if (!profile) {
-      await userProfileRepository.createUserProfile({
-        uid: user.uid,
-        email: user.email ?? '',
-        profileType: 'normal',
-        generalInfo: {
-          username: user.displayName ?? '',
-        },
-        disabled: false,
-      });
-      profile = await userProfileRepository.getUserProfile(user.uid);
-    }
+    // Firestore no debe impedir el acceso a una cuenta autenticada. El perfil
+    // se repara cuando las reglas permiten la operación, pero un fallo de red
+    // o de permisos no invalida las credenciales de Firebase Auth.
+    try {
+      let profile = await userProfileRepository.getUserProfile(user.uid);
+      if (!profile) {
+        await userProfileRepository.createUserProfile({
+          uid: user.uid,
+          email: user.email ?? '',
+          profileType: 'normal',
+          generalInfo: {
+            username: user.displayName ?? '',
+          },
+          disabled: false,
+        });
+        profile = await userProfileRepository.getUserProfile(user.uid);
+      }
 
-    if (profile?.disabled) {
-      await signOut(auth);
-      throw new Error('Tu cuenta ha sido dada de baja. Contacta al administrador.');
+      if (profile?.disabled) {
+        await signOut(auth);
+        throw new Error('Tu cuenta ha sido dada de baja. Contacta al administrador.');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('dada de baja')) {
+        throw error;
+      }
+      console.warn('No se pudo comprobar el perfil de Firestore durante el login:', error);
     }
 
     return {

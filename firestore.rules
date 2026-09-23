@@ -1,0 +1,186 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email in [
+        'emanuelmorales200523@gmail.com',
+        'moralesjose7331@gmail.com',
+        'lizbethmartinezmtz05@gmail.com'
+      ];
+    }
+
+    // ============================================
+    // REGLAS EXISTENTES (sin cambios)
+    // ============================================
+
+    match /userProfiles/{uid} {
+      allow read, create, update, delete:
+        if request.auth != null
+        && (request.auth.uid == uid || isAdmin());
+    }
+
+    match /downloads/{downloadId} {
+      allow create: if request.resource.data.apkVersion is string;
+      allow read: if true;
+    }
+
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if request.resource.data.name is string
+        && request.resource.data.text is string
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+    }
+
+    match /users/{userId}/registrosEmocionales/{registroId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // Reglas DASS-21
+    // ============================================
+    match /users/{userId}/dass21/{responseId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // Reglas SUS
+    // ============================================
+    match /users/{userId}/sus/{docId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // Reglas Autopercepcion
+    // ============================================
+    match /users/{userId}/autopercepcion/{docId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // Reglas FeedBack
+    // ============================================
+    match /users/{userId}/feedback/{docId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // Playwall
+    // ============================================
+    match /users/{userId}/paywall/{docId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // HÁBITOS (sin cambios)
+    // ============================================
+    match /habits/{habitId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // ============================================
+    // NUEVA REGLA: COLECCIÓN GROUP DE MEMBERS
+    // ============================================
+    match /{path=**}/members/{memberUid} {
+      allow read: if request.auth != null;
+    }
+
+    // ============================================
+    // SOLICITUDES DE INGRESO (sin cambios)
+    // ============================================
+    match /communities/{communityId}/joinRequests/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid ||
+        request.auth.uid == get(/databases/$(database)/documents/communities/$(communityId)).data.createdBy);
+      allow write: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && request.auth.uid ==
+        get(/databases/$(database)/documents/communities/$(communityId)).data.createdBy;
+    }
+
+    // ============================================
+    // COMUNIDADES (sin cambios)
+    // ============================================
+    match /communities/{communityId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.createdBy ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberCount'])
+      );
+      allow delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+
+      match /{subcollection=**}/{docId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // ============================================
+    // LOGS EMOCIONALES (sin cambios)
+    // ============================================
+    match /users/{uid}/emotion_logs/{logId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == uid;
+    }
+
+    // ============================================
+    // DIARY SUMMARY / CHAT HISTORY (sin cambios)
+    // ============================================
+    match /users/{uid}/chat_history/{date} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == uid;
+    }
+
+    // ============================================
+    // KEEPERGO: MASCOTA Y CONTENIDO DE LA RACHA
+    // ============================================
+    match /mascotas/{uid} {
+      allow read, create, update: if isSignedIn()
+        && (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /pet_options/{optionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /milestones/{milestoneId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /motivational_messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isAdmin();
+      allow update: if isSignedIn();
+    }
+
+    match /daily_messages/{messageId} {
+      allow read, create, update: if isSignedIn()
+        && (request.auth.uid == request.resource.data.userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /metadata/{documentId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Permite al panel administrativo consultar y gestionar las cuentas.
+    match /userProfiles/{uid} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

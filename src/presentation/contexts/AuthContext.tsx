@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../infrastructure/firebase/firebaseConfig';
 import { AuthRepositoryImpl } from '../../data/repositories/AuthRepositoryImpl';
@@ -20,6 +20,14 @@ interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+  }
+  return context;
+}
 
 const repository = new AuthRepositoryImpl();
 const loginUseCase = new LoginUseCase(repository);
@@ -71,9 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return result;
     } catch (error) {
-      setErrorMessage((error as Error).message);
+      const message = error instanceof Error ? error.message : 'No se pudo iniciar sesión.';
+      setErrorMessage(message);
       setIsLoading(false);
-      return null;
+      throw new Error(message);
     }
   };
 

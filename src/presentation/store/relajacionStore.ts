@@ -26,7 +26,7 @@ interface RelajacionState {
   getEjercicioPorId: (id: string) => EjercicioRespiración | undefined;
   iniciarEjercicio: (ejercicioId: string) => void;
   actualizarProgreso: (segundos: number, fase: number) => void;
-  completarEjercicio: (puntuacion?: number, nota?: string) => Promise<void>;
+  completarEjercicio: (puntuacion?: number, nota?: string) => Promise<SesionRelajacion | undefined>;
   guardarSesion: (sesion: Omit<SesionRelajacion, 'id'>) => Promise<SesionRelajacion>;
   limpiarError: () => void;
 }

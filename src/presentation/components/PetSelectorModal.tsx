@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PetOptionEntity, isPetOptionUnlocked, getCurrentStage } from '../../domain/entities/mascota/PetOption';
+import { PetImage } from '../../utils/petImageAssets';
 
 interface PetSelectorModalProps {
   visible: boolean;
@@ -73,7 +74,7 @@ export function PetSelectorModal({
                   >
                     {unlocked ? (
                       stage?.imageUrl ? (
-                        <Image source={{ uri: stage.imageUrl }} style={styles.petImage} resizeMode="contain" />
+                        <PetImage imageUrl={stage.imageUrl} width={36} height={36} style={styles.petImage} />
                       ) : (
                         <Text style={styles.petEmoji}>{stage?.emoji ?? option.emoji}</Text>
                       )
@@ -110,7 +111,14 @@ export function PetSelectorModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
   centerWrapper: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   card: {
     backgroundColor: '#fff',
