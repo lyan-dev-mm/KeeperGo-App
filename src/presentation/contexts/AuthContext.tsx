@@ -11,15 +11,29 @@ interface AuthContextType {
   isLoading: boolean;
   isInitializing: boolean;
   errorMessage: string | null;
+
   login: (email: string, password: string) => Promise<UserEntity | null>;
-  register: (email: string, password: string, fullName?: string) => Promise<UserEntity | null>;
+
+  register: (
+    email: string,
+    password: string,
+    names: {
+      nombres: string;
+      primerApellido: string;
+      segundoApellido: string;
+    }
+  ) => Promise<UserEntity | null>;
+
   logout: () => Promise<void>;
   clearError: () => void;
+
   sendVerificationEmail: () => Promise<void>;
   refreshUser: () => Promise<UserEntity | null>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
@@ -41,66 +55,103 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log(
+        '🔥 onAuthStateChanged disparado. Usuario:',
+        firebaseUser?.email ?? 'NINGUNO'
+      );
+
       if (firebaseUser) {
         try {
-          const disabled = await repository.isAccountDisabled(firebaseUser.uid);
+          // Verificar si la cuenta fue deshabilitada por un administrador.
+          const disabled = await repository.isAccountDisabled(
+            firebaseUser.uid
+          );
+
           if (disabled) {
             await repository.logout();
             setUser(null);
             setIsInitializing(false);
             return;
           }
-        } catch {
-          // Si falla la verificación por red, dejamos pasar para no
-          // bloquear al usuario por un error temporal de conexión.
+        } catch (error) {
+          // Si falla la consulta por un problema temporal de conexión,
+          // no bloqueamos el acceso del usuario.
+          console.warn(
+            'No se pudo verificar el estado de la cuenta:',
+            error
+          );
         }
 
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email ?? '',
           name: firebaseUser.displayName ?? '',
+          nombres: firebaseUser.displayName ?? '',
+          primerApellido: '',
+          segundoApellido: '',
           emailVerified: firebaseUser.emailVerified,
         });
       } else {
         setUser(null);
       }
+
       setIsInitializing(false);
     });
 
     return unsubscribe;
   }, []);
 
-  const login = async (email: string, password: string): Promise<UserEntity | null> => {
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<UserEntity | null> => {
     setIsLoading(true);
     setErrorMessage(null);
+
     try {
       const result = await loginUseCase.execute(email, password);
+
       setUser(result);
       setIsLoading(false);
+
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo iniciar sesión.';
+      const message =
+        error instanceof Error ? error.message : 'No se pudo iniciar sesión.';
       setErrorMessage(message);
       setIsLoading(false);
-      throw new Error(message);
+
+      return null;
     }
   };
 
   const register = async (
     email: string,
     password: string,
-    fullName?: string
+    names: {
+      nombres: string;
+      primerApellido: string;
+      segundoApellido: string;
+    }
   ): Promise<UserEntity | null> => {
     setIsLoading(true);
     setErrorMessage(null);
+
     try {
-      const result = await registerUseCase.execute(email, password, fullName);
+      const result = await registerUseCase.execute(
+        email,
+        password,
+        names
+      );
+
       setUser(result);
       setIsLoading(false);
+
       return result;
     } catch (error) {
       setErrorMessage((error as Error).message);
       setIsLoading(false);
+
       return null;
     }
   };
@@ -110,7 +161,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const clearError = () => setErrorMessage(null);
+  const clearError = (): void => {
+    setErrorMessage(null);
+  };
 
   const sendVerificationEmail = async (): Promise<void> => {
     await repository.sendVerificationEmail();
@@ -118,7 +171,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async (): Promise<UserEntity | null> => {
     const result = await repository.reloadCurrentUser();
+
     setUser(result);
+
     return result;
   };
 

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../../../constants/colors';
+import { COLORS, Colors } from '../../../../constants/colors';
 import { pickAndUploadImageToCloudinary } from '../../../infrastructure/cloudinary/cloudinaryUploadService';
 import { datosNonStopService, ProfessionalData } from '../../../infrastructure/api/datosNonStopService';
 import { CustomToast } from '../common/CustomToast';
 import { useToast } from '../../hooks/useToast';
+import { validateTitularIdentity } from '../../../utils/validators';
+import { getUserProfile } from '../../../infrastructure/firebase/userProfileService';
+import { auth } from '../../../infrastructure/firebase/firebaseConfig';
 
 interface ProfessionalProfileFormProps {
   onBack: () => void;
@@ -62,7 +65,20 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
 
   const handleFinish = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.specialty.trim()) newErrors.specialty = 'La profesión es obligatoria';
+
+    if (!formData.curp.trim()) {
+      newErrors.curp = 'El número de cédula es obligatorio';
+    }
+
+    if (verificationStatus !== 'verified' || !formData.professionalVerified) {
+      showToast('Debes verificar tu cédula profesional para continuar.', 'error');
+      setErrors(newErrors);
+      return;
+    }
+
+    if (!formData.specialty.trim()) {
+      newErrors.specialty = 'La profesión es obligatoria';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -80,7 +96,8 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
         carrera: formData.carrera,
         description: formData.description,
         professionalDetails: formData.profInfo,
-        curp: formData.curp,
+        licenseNumber: formData.curp.trim(),
+        curp: undefined,
         professionalVerified: formData.professionalVerified,
         institucion: formData.institucion,
         academicDetails: {
@@ -94,35 +111,103 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
   };
 
   const handleVerify = async () => {
-    if (!formData.curp.trim()) {
+    const licenseNum = formData.curp.trim();
+    if (!licenseNum) {
       setErrors({ ...errors, curp: 'Ingresa un número de cédula' });
+      showToast('Ingresa un número de cédula profesional.', 'error');
       return;
     }
 
     setVerificationStatus('verifying');
     setErrors({ ...errors, curp: '' });
 
-    const result = await datosNonStopService.verifyLicense(formData.curp);
+    try {
+      // 1. Obtener datos del usuario autenticado en Firebase
+      let userNames = {
+        nombres: '',
+        primerApellido: '',
+        segundoApellido: '',
+        displayName: auth.currentUser?.displayName || '',
+      };
 
-    if (result.status === 'found' && result.data) {
-      setVerificationStatus('verified');
-      setFormData(prev => ({
-        ...prev,
-        specialty: result.data!.profesion,
-        carrera: result.data!.carrera,
-        institucion: result.data!.institucion,
-        nivelEducativo: result.data!.nivelEducativo,
-        areaConocimiento: result.data!.areaConocimiento,
-        subareaConocimiento: result.data!.subareaConocimiento,
-        professionalVerified: true,
-      }));
-      showToast('La cédula profesional fue verificada correctamente. Los datos han sido cargados.', 'success');
-    } else if (result.status === 'not_found') {
-      setVerificationStatus('not_found');
-      showToast(result.message || 'No se encontró información asociada a esta cédula.', 'error');
-    } else {
+      try {
+        const userProfile = await getUserProfile();
+        if (userProfile?.generalInfo) {
+          userNames = {
+            nombres: userProfile.generalInfo.nombres || '',
+            primerApellido: userProfile.generalInfo.primerApellido || '',
+            segundoApellido: userProfile.generalInfo.segundoApellido || '',
+            displayName: auth.currentUser?.displayName || '',
+          };
+        }
+      } catch (profileErr) {
+        console.warn('[ProfessionalProfileForm] No se pudo obtener generalInfo del perfil de Firebase:', profileErr);
+      }
+
+      // 2. Consultar API DatosNonStop
+      const result = await datosNonStopService.verifyLicense(licenseNum);
+
+      if (result.status === 'found' && result.data) {
+        // 3. Validar identidad del titular de la cédula contra el usuario de Firebase
+        const isIdentityMatch = validateTitularIdentity(userNames, {
+          nombre: result.data.nombre,
+          paterno: result.data.paterno,
+          materno: result.data.materno,
+          nombreCompleto: result.data.nombreCompleto,
+        });
+
+        if (!isIdentityMatch) {
+          // Rechazar: La cédula pertenece a otra persona
+          setVerificationStatus('error');
+          setFormData(prev => ({
+            ...prev,
+            specialty: '',
+            carrera: '',
+            institucion: '',
+            nivelEducativo: '',
+            areaConocimiento: '',
+            subareaConocimiento: '',
+            professionalVerified: false,
+          }));
+          showToast('La cédula encontrada no corresponde con los datos del usuario registrado.', 'error');
+          return;
+        }
+
+        // Aprobar: Cédula verificada e identidad confirmada
+        setVerificationStatus('verified');
+        setFormData(prev => ({
+          ...prev,
+          specialty: result.data!.profesion,
+          carrera: result.data!.carrera,
+          institucion: result.data!.institucion,
+          nivelEducativo: result.data!.nivelEducativo,
+          areaConocimiento: result.data!.areaConocimiento,
+          subareaConocimiento: result.data!.subareaConocimiento,
+          professionalVerified: true,
+        }));
+        showToast('Cédula profesional verificada correctamente.', 'success');
+      } else if (result.status === 'not_found') {
+        setVerificationStatus('not_found');
+        setFormData(prev => ({
+          ...prev,
+          specialty: '',
+          carrera: '',
+          institucion: '',
+          nivelEducativo: '',
+          areaConocimiento: '',
+          subareaConocimiento: '',
+          professionalVerified: false,
+        }));
+        showToast(result.message || 'No se encontró información asociada a esta cédula profesional.', 'error');
+      } else {
+        setVerificationStatus('error');
+        setFormData(prev => ({ ...prev, professionalVerified: false }));
+        showToast(result.message || 'Error al verificar la cédula.', 'error');
+      }
+    } catch (err: any) {
       setVerificationStatus('error');
-      showToast(result.message || 'Error al verificar la cédula.', 'error');
+      setFormData(prev => ({ ...prev, professionalVerified: false }));
+      showToast(err.message || 'Error inesperado durante la verificación.', 'error');
     }
   };
 
@@ -141,6 +226,24 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
             <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
             <Text style={[styles.statusText, { color: '#4CAF50', fontWeight: 'bold' }]}>
               Verificada correctamente
+            </Text>
+          </View>
+        );
+      case 'not_found':
+        return (
+          <View style={styles.statusContainer}>
+            <Ionicons name="close-circle" size={20} color={Colors.error || '#F44336'} />
+            <Text style={[styles.statusText, { color: Colors.error || '#F44336' }]}>
+              No se encontró la cédula
+            </Text>
+          </View>
+        );
+      case 'error':
+        return (
+          <View style={styles.statusContainer}>
+            <Ionicons name="warning" size={20} color={Colors.error || '#F44336'} />
+            <Text style={[styles.statusText, { color: Colors.error || '#F44336' }]}>
+              No verificada
             </Text>
           </View>
         );
@@ -249,8 +352,6 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
     );
   }
 
-  const isVerified = verificationStatus === 'verified';
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -261,13 +362,28 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         <View style={styles.field}>
-          <Text style={styles.label}>Número de Cédula</Text>
+          <Text style={styles.label}>Número de Cédula *</Text>
           <View style={styles.inputWithButton}>
             <TextInput
               style={[styles.input, { flex: 1 }, errors.curp && styles.inputError]}
               placeholder="Introduce tu número de cédula profesional"
               value={formData.curp}
-              onChangeText={(text) => setFormData({ ...formData, curp: text.toUpperCase() })}
+              onChangeText={(text) => {
+                setFormData({
+                  ...formData,
+                  curp: text.toUpperCase(),
+                  professionalVerified: false,
+                  specialty: '',
+                  carrera: '',
+                  institucion: '',
+                  nivelEducativo: '',
+                  areaConocimiento: '',
+                  subareaConocimiento: '',
+                });
+                if (verificationStatus !== 'not_verified') {
+                  setVerificationStatus('not_verified');
+                }
+              }}
               autoCapitalize="characters"
             />
             <TouchableOpacity
@@ -498,7 +614,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.primary || '#5AC155',
+    color: COLORS.primaryDark || '#5AC155',
     marginBottom: 15,
   },
   inputWithButton: {

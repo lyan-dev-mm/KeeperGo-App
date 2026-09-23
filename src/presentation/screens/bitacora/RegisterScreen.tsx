@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, EMOCIONES} from '../../../../constants/colors';
+import { COLORS, EMOCIONES } from '../../../../constants/colors';
 import EmotionWheel from '../../components/bitacora/EmotionWheel';
 import IntensitySlider from '../../components/bitacora/IntensitySlider'; 
 import ConfirmationPanel from '../../components/bitacora/ConfirmationPanel'; 

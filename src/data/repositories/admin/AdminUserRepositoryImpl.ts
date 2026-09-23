@@ -22,10 +22,24 @@ export class AdminUserRepositoryImpl implements AdminUserRepository {
         ? userData.createdAt.toDate().toISOString()
         : undefined;
 
+      const generalInfo = userData.generalInfo;
+      const realName = generalInfo
+        ? [generalInfo.nombres, generalInfo.primerApellido, generalInfo.segundoApellido]
+            .filter((val) => Boolean(val) && val !== 'undefined')
+            .join(' ')
+            .trim()
+        : undefined;
+
+      const formattedName =
+        realName ||
+        userData.professionalInfo?.professionalName ||
+        userData.institutionInfo?.institutionName ||
+        userData.email;
+
       return {
         uid: d.id,
         email: userData.email ?? '',
-        name: userData.generalInfo?.username,
+        name: formattedName,
         createdAt,
         petName: pet?.name,
         level: pet?.level,

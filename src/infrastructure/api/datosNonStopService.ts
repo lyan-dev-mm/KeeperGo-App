@@ -8,6 +8,11 @@ export interface ProfessionalData {
   areaConocimiento: string;
   subareaConocimiento: string;
   institucion: string;
+  // Datos del titular para validación de identidad
+  nombre?: string;
+  paterno?: string;
+  materno?: string;
+  nombreCompleto?: string;
 }
 
 /**
@@ -53,15 +58,25 @@ export const datosNonStopService = {
       const result = await response.json();
 
       if (response.status === 200 && result.status === 'found') {
+        const d = result.data || {};
+        const nombre = d.nombre || d.nombres || '';
+        const paterno = d.paterno || d.apellido_paterno || d.apellidoPaterno || d.primer_apellido || '';
+        const materno = d.materno || d.apellido_materno || d.apellidoMaterno || d.segundo_apellido || '';
+        const nombreCompleto = d.nombre_completo || d.nombreCompleto || d.titular || [nombre, paterno, materno].filter(Boolean).join(' ');
+
         return {
           status: 'found',
           data: {
-            profesion: result.data.profesion || '',
-            carrera: result.data.carrera || '',
-            nivelEducativo: result.data.nivel_educativo || result.data.nivelEducativo || '',
-            areaConocimiento: result.data.area_conocimiento || result.data.areaConocimiento || '',
-            subareaConocimiento: result.data.subarea_conocimiento || result.data.subareaConocimiento || '',
-            institucion: result.data.institucion || ''
+            profesion: d.profesion || '',
+            carrera: d.carrera || '',
+            nivelEducativo: d.nivel_educativo || d.nivelEducativo || '',
+            areaConocimiento: d.area_conocimiento || d.areaConocimiento || '',
+            subareaConocimiento: d.subarea_conocimiento || d.subareaConocimiento || '',
+            institucion: d.institucion || '',
+            nombre,
+            paterno,
+            materno,
+            nombreCompleto
           }
         };
       } else if (result.status === 'not found' || result.status === 'not_found' || response.status === 404) {
