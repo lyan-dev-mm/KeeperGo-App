@@ -19,13 +19,19 @@ import { UserProfileRepositoryImpl } from './auth/UserProfileRepositoryImpl';
 function handleFirebaseError(error: AuthError): string {
   switch (error.code) {
     case 'auth/user-not-found':
-      return 'Usuario no encontrado.';
+      return 'No encontramos ese usuario. Revisa el correo electrónico.';
     case 'auth/wrong-password':
-      return 'Contraseña incorrecta.';
+      return 'La contraseña es incorrecta.';
+    case 'auth/invalid-credential':
+      return 'Credenciales inválidas. Revisa el usuario y la contraseña.';
     case 'auth/email-already-in-use':
       return 'Este correo ya está registrado.';
     case 'auth/invalid-email':
       return 'Correo electrónico inválido.';
+    case 'auth/user-disabled':
+      return 'Esta cuenta ha sido deshabilitada.';
+    case 'auth/too-many-requests':
+      return 'Demasiados intentos. Intenta más tarde.';
     default:
       return `Error: ${error.message}`;
   }
@@ -63,12 +69,9 @@ export class AuthRepositoryImpl implements AuthRepository {
       profile = await userProfileRepository.getUserProfile(user.uid);
     }
 
-    // Verificar si la cuenta fue deshabilitada por un administrador.
     if (profile?.disabled) {
       await signOut(auth);
-      throw new Error(
-        'Tu cuenta ha sido dada de baja. Contacta al administrador.'
-      );
+      throw new Error('Tu cuenta ha sido dada de baja. Contacta al administrador.');
     }
 
     return {
@@ -123,7 +126,7 @@ export class AuthRepositoryImpl implements AuthRepository {
         });
       } catch (profileError) {
         console.error(
-          '❌ Error al crear el perfil del usuario en Firestore:',
+          '❌Error al crear el perfil del usuario en Firestore:',
           profileError
         );
       }

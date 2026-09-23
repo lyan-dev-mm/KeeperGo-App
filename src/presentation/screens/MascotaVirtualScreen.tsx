@@ -3,11 +3,9 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePet } from '../hooks/usePet';
 import { usePetReactions } from '../hooks/usePetReactions';
-import { useDailyMessage } from '../hooks/useDailyMessage';
 import { usePetActivity } from '../contexts/PetActivityContext';
 import { usePetOptions } from '../hooks/usePetOptions';
 import { PetNameEditor } from '../components/PetNameEditor';
-import { MotivationalBanner } from '../components/MotivationalBanner';
 import { WeeklyStreakRow } from '../components/WeeklyStreakRow';
 import { LevelProgressBar } from '../components/LevelProgressBar';
 import { RewardsCarousel } from '../components/RewardsCarousel';
@@ -22,7 +20,6 @@ const DEFAULT_SPEECH = '¡Lo estás haciendo genial! Cada día te acercas más a
 
 export default function MascotaVirtualScreen() {
   const { pet, isLoading, error, updateName, selectPet, feedPet } = usePet();
-  const { message } = useDailyMessage();
   const { petRef, reactionMessage, triggerEvent } = usePetReactions();
   const { consumePendingResult } = usePetActivity();
   const { petOptions, isLoading: optionsLoading } = usePetOptions();
@@ -98,8 +95,6 @@ export default function MascotaVirtualScreen() {
 
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        <MotivationalBanner message={message} />
-
         <View style={styles.streakCard}>
           <View style={styles.streakLeft}>
             <Text style={styles.streakLabel}>Días consecutivos</Text>
@@ -114,10 +109,11 @@ export default function MascotaVirtualScreen() {
             <View style={styles.speechBubble}>
               <Text style={styles.speechText}>{reactionMessage ?? DEFAULT_SPEECH}</Text>
             </View>
+
             <InteractivePet
               ref={petRef}
               onTap={() => triggerEvent('INTERACCION_MASCOTA')}
-              size={64}
+              size={68}
               stage={currentStage}
             />
             {currentStage && <Text style={styles.stageLabel}>{currentStage.name}</Text>}
@@ -182,11 +178,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     flexDirection: 'row',
   },
-  streakLeft: { flex: 1.1 },
+  streakLeft: { flex: 1.1},
   streakLabel: { fontSize: 13, color: '#9E9E9E' },
   streakNumber: { fontSize: 40, fontWeight: 'bold', color: 'rgba(0,0,0,0.87)', marginTop: 2 },
   streakSubtitle: { fontSize: 13, color: '#4CAF50', fontWeight: '600', marginBottom: 6 },
-  petPanel: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  petPanel: { flex: 1, alignItems: 'flex-end', justifyContent: 'flex-end', padding:2},
   speechBubble: { backgroundColor: '#F1F8ED', borderRadius: 12, padding: 10, marginBottom: 10 },
   speechText: { fontSize: 11, color: '#3E6B3E', textAlign: 'center' },
   stageLabel: { fontSize: 11, color: '#9E9E9E', marginTop: 4, fontWeight: '600' },

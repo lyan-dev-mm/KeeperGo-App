@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import EmotionWheel from './EmotionWheel';
 import IntensitySlider from './IntensitySlider';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
 import { EmotionData } from './ConfirmationPanel';
 
 export interface EmotionEditFormProps {

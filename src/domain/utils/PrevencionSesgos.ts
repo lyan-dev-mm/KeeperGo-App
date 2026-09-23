@@ -1,4 +1,3 @@
-
 import { RegistroAnimo } from '../entities/bitacora/RegistroAnimo';
 
 interface Limites {
@@ -136,10 +135,12 @@ export class PrevencionSesgos {
       };
     }
 
-    // Verificar que el lenguaje no sea victimizante
+    // FIX: se usan límites de palabra (\b) en vez de .includes() para evitar
+    // falsos positivos como "quieres" -> contiene "eres", "jornada" -> contiene
+    // "nada", "contodos" -> contendría "todo", etc.
     const palabrasProhibidas = ['siempre', 'nunca', 'todo', 'nada', 'eres'];
     const contiene = palabrasProhibidas.some((p) =>
-      mensaje.toLowerCase().includes(p)
+      new RegExp(`\\b${p}\\b`, 'i').test(mensaje)
     );
 
     return {
@@ -169,8 +170,10 @@ export class PrevencionSesgos {
 
     let mensaje = mensajeOriginal;
     Object.keys(reformulaciones).forEach((palabra) => {
+      // FIX: mismo límite de palabra (\b) aquí, para no reemplazar "eres"
+      // dentro de "quieres" y dejar palabras rotas como "qui sientes te".
       mensaje = mensaje.replace(
-        new RegExp(palabra, 'gi'),
+        new RegExp(`\\b${palabra}\\b`, 'gi'),
         reformulaciones[palabra]
       );
     });

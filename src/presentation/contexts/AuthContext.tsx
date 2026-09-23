@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../infrastructure/firebase/firebaseConfig';
 import { AuthRepositoryImpl } from '../../data/repositories/AuthRepositoryImpl';
@@ -12,7 +12,7 @@ interface AuthContextType {
   isInitializing: boolean;
   errorMessage: string | null;
 
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<UserEntity | null>;
 
   register: (
     email: string,
@@ -22,7 +22,7 @@ interface AuthContextType {
       primerApellido: string;
       segundoApellido: string;
     }
-  ) => Promise<boolean>;
+  ) => Promise<UserEntity | null>;
 
   logout: () => Promise<void>;
   clearError: () => void;
@@ -34,6 +34,14 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
 );
+
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+  }
+  return context;
+}
 
 const repository = new AuthRepositoryImpl();
 const loginUseCase = new LoginUseCase(repository);
@@ -96,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (
     email: string,
     password: string
-  ): Promise<boolean> => {
+  ): Promise<UserEntity | null> => {
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -106,12 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result);
       setIsLoading(false);
 
-      return result != null;
+      return result;
     } catch (error) {
-      setErrorMessage((error as Error).message);
+      const message =
+        error instanceof Error ? error.message : 'No se pudo iniciar sesión.';
+      setErrorMessage(message);
       setIsLoading(false);
 
-      return false;
+      return null;
     }
   };
 
@@ -123,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       primerApellido: string;
       segundoApellido: string;
     }
-  ): Promise<boolean> => {
+  ): Promise<UserEntity | null> => {
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -137,12 +147,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result);
       setIsLoading(false);
 
-      return result != null;
+      return result;
     } catch (error) {
       setErrorMessage((error as Error).message);
       setIsLoading(false);
 
-      return false;
+      return null;
     }
   };
 

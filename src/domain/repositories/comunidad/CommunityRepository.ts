@@ -18,6 +18,7 @@ export interface CommunityRepository {
   rejectJoinRequest(communityId: string, uid: string): Promise<void>;
   getUserJoinRequest(communityId: string, userId: string): Promise<CommunityJoinRequestEntity | null>;
   getUserCommunities(userId: string): Promise<CommunityEntity[]>;
+  getCommunityMembers(communityId: string): Promise<CommunityMemberEntity[]>;
 getOwnedCommunitiesWithPendingRequests(userId: string): Promise<{
   communityId: string;
   communityName: string;

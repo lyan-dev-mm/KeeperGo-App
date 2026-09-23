@@ -15,8 +15,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { Validators } from '../../utils/validators';
 import { Texts } from '../../../constants/Texts';
-import { Colors } from '../../../constants/Colors';
-import { auth } from '../../infrastructure/firebase/firebaseConfig';
+import { Colors} from '../../../constants/colors';
 
 export default function LoginScreen() {
   const { login, isLoading, errorMessage } = useAuth();
@@ -34,23 +33,20 @@ export default function LoginScreen() {
     setPasswordError(pErr);
     if (eErr || pErr) return;
 
-    const result = await login(email.trim(), password.trim());
-
-    if (result) {
-      const currentUser = auth.currentUser;
-
-      if (currentUser?.emailVerified) {
-        router.replace('/(tabs)/home');
-      } else {
-        router.replace({ pathname: '/verify-email', params: { next: 'home' } });
+    try {
+      const result = await login(email.trim(), password.trim());
+      if (result) {
+        if (result.emailVerified) {
+          router.replace('/(tabs)/home');
+        } else {
+          router.replace({ pathname: '/verify-email', params: { next: 'home' } });
+        }
       }
-    } else {
-      Alert.alert(
-        'Claves incorrectas',
-        errorMessage ?? 'Usuario o Contraseña incorrectas'
-      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Usuario o contraseña incorrectos.';
+      Alert.alert('Inicio de sesión', message);
     }
-};
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container} style={styles.scrollBackground}>

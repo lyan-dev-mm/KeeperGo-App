@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getSpecialistById } from '../../../constants/Specialists';
-import { Colors } from '../../../constants/Colors';
+import { Colors } from '../../../constants/colors';
 
 export default function SpecialistProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

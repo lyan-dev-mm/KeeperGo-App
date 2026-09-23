@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../hooks/useAuth';
 import { Validators } from '../../utils/validators';
-import { Colors } from '../../../constants/Colors';
+import { Colors } from '../../../constants/colors';
 
 export default function RegisterScreen() {
   const { register, isLoading, errorMessage } = useAuth();

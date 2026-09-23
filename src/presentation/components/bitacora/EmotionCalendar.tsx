@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
 import { Emocion } from '../../../domain/entities/bitacora/Emocion';
 import { RegistroAnimo } from '../../../domain/entities/bitacora/RegistroAnimo'
 
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 1,
-    backgroundColor: COLORS.primary, 
+    backgroundColor: '#76e070', 
     borderRadius: 12,
     marginBottom: 0,
   },

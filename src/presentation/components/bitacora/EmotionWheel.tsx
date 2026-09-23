@@ -10,7 +10,7 @@ import {
   Dimensions,
   TouchableOpacity
 } from 'react-native';
-import { COLORS, EMOCIONES } from '../../../../constants/Colors';
+import { COLORS, EMOCIONES } from '../../../../constants/colors';
 import { EmotionData } from './ConfirmationPanel';
 
 const { width } = Dimensions.get('window');

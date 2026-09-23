@@ -2,7 +2,7 @@
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, ENERGY_COLORS } from '../../../../constants/Colors';
+import { COLORS, ENERGY_COLORS } from '../../../../constants/colors';
 import { Emocion } from '../../../domain/entities/bitacora/Emocion';
 import { RegistroAnimo } from '../../../domain/entities/bitacora/RegistroAnimo'
 
@@ -48,7 +48,7 @@ export default function DayInfoCard({
       7: '62%',
       8: '72%',
       9: '85%',
-      10: '95%',
+      10: '100%',
     };
     return positions[Math.round(energia)] || '50%';
   };
@@ -177,7 +177,7 @@ export default function DayInfoCard({
           <Feather name="edit-2" size={16} color="#FFFFFF" />
           <Text style={styles.editButtonText}>Editar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.detailsButton]}>
+        <TouchableOpacity style={[styles.actionButton, styles.detailsButton]} >
           <Feather name="bar-chart-2" size={16} color="#FFFFFF" />
           <Text style={styles.detailsButtonText}>Ver más</Text>
         </TouchableOpacity>
@@ -189,7 +189,7 @@ export default function DayInfoCard({
 const styles = StyleSheet.create({
   // ===== CONTENEDOR PRINCIPAL =====
   container: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#76e070', // '#6da957' 5AC155
     borderRadius: 16,
     padding: 16,
     marginVertical: 12,

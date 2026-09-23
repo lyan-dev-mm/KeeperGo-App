@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
 
 interface ControlRespiracionProps {
   isActive: boolean;

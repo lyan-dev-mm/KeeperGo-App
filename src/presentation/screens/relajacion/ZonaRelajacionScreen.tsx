@@ -1,4 +1,4 @@
-import React, { JSX } from 'react';
+import React, { JSX, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
+import { useRelajacionStore } from '../../store/relajacionStore';
 
 const { height } = Dimensions.get('window');
 
@@ -26,6 +27,13 @@ type EjercicioItem = {
 
 export default function ZonaRelajacionScreen(): JSX.Element {
   const router = useRouter();
+  const { ejercicios: ejerciciosStore, loadEjercicios } = useRelajacionStore();
+
+  useEffect(() => {
+    if (ejerciciosStore.length === 0) {
+      loadEjercicios();
+    }
+  }, [ejerciciosStore.length, loadEjercicios]);
 
   const ejercicios: EjercicioItem[] = [
     {

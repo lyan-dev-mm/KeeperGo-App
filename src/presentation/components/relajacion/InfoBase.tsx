@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
 
 interface InfoFaseProps {
   fase: 'inhalar' | 'mantener' | 'exhalar';

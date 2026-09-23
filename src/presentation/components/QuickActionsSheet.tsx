@@ -36,6 +36,8 @@ export function QuickActionsSheet({ visible, onClose }: QuickActionsSheetProps) 
       router.push('/(tabs)/habits');
     } else if (key === 'emocion') {
       router.push('/(tabs)/bitacora');
+    } else if (key === 'actividad') {
+      router.push('/(tabs)/habits');
     } 
     else {
       showComingSoon();
@@ -69,7 +71,14 @@ export function QuickActionsSheet({ visible, onClose }: QuickActionsSheetProps) 
 }
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
   sheetWrapper: { position: 'absolute', bottom: 90, left: 0, right: 0, alignItems: 'center' },
   sheet: {
     backgroundColor: '#fff',

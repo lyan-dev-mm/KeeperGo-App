@@ -1,7 +1,7 @@
 
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
 
 export interface DeleteConfirmModalProps {
   visible: boolean;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../../../constants/Colors';
+import { Colors } from '../../../../constants/colors';
 import { pickAndUploadImageToCloudinary } from '../../../infrastructure/cloudinary/cloudinaryUploadService';
 import { getUserProfile } from '../../../infrastructure/firebase/userProfileService';
 import { CustomToast, ToastType } from '../common/CustomToast';

@@ -9,7 +9,7 @@ import {
   ScrollView,
   BackHandler,
 } from 'react-native';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
 import IntensitySlider from './IntensitySlider';
 
 export interface ReflectionAnswers {

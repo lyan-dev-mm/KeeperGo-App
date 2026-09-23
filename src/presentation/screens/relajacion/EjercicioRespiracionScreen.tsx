@@ -11,12 +11,13 @@ import {
   Easing,
   TouchableOpacity,
   Text,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../../../constants/Colors';
+import { COLORS } from '../../../../constants/colors';
 import { useRelajacionStore } from '../../store/relajacionStore';
 
 import BolitaRespiracion from '../../components/relajacion/BolitaRespiracion';
@@ -33,8 +34,14 @@ export default function EjercicioRespiracionScreen(): JSX.Element {
   const params = useLocalSearchParams();
   const ejercicioId = params.ejercicioId as string;
 
-  const { getEjercicioPorId, iniciarEjercicio, completarEjercicio } =
-    useRelajacionStore();
+  const {
+    getEjercicioPorId,
+    iniciarEjercicio,
+    completarEjercicio,
+    ejercicios,
+    isLoading: isLoadingEjercicios,
+    loadEjercicios,
+  } = useRelajacionStore();
   const ejercicio = getEjercicioPorId(ejercicioId);
 
   // Estados
@@ -173,6 +180,12 @@ export default function EjercicioRespiracionScreen(): JSX.Element {
   }, [ejercicio]);
 
   useEffect(() => {
+    if (ejercicios.length === 0 && !isLoadingEjercicios) {
+      loadEjercicios();
+    }
+  }, [ejercicios.length, isLoadingEjercicios, loadEjercicios]);
+
+  useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (animacionRef.current) animacionRef.current.stop();
@@ -212,6 +225,14 @@ export default function EjercicioRespiracionScreen(): JSX.Element {
   };
 
   if (!ejercicio) {
+    if (isLoadingEjercicios || ejercicios.length === 0) {
+      return (
+        <SafeAreaView style={styles.errorContainer}>
+          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+        </SafeAreaView>
+      );
+    }
+
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Text style={styles.errorText}>Ejercicio no encontrado</Text>

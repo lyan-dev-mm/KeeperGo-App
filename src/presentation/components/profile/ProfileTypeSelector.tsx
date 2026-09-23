@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../../../constants/Colors';
+import { Colors } from '../../../../constants/colors';
 
 interface ProfileTypeSelectorProps {
   visible: boolean;

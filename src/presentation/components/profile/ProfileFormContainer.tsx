@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../../../constants/Colors';
+import { Colors } from '../../../../constants/colors';
 
 interface ProfileFormContainerProps {
   title: string;

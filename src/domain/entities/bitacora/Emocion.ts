@@ -1,5 +1,5 @@
 
-import { EMOCIONES_DATA, COLORS } from '../../../../constants/Colors';
+import { EMOCIONES_DATA, COLORS } from '../../../../constants/colors';
 
 interface EmocionData {
   id: string;

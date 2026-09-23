@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../../../constants/Colors';
+import { Colors } from '../../../constants/colors';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
