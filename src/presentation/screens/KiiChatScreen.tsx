@@ -8,11 +8,14 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { delay } from '../../utils/asyncUtils';
+import { aiConfigService } from '../../services/aiConfigService';
+import { dailySummaryService } from '../../services/dailySummaryService';
+import { auth } from '../../infrastructure/firebase/firebaseConfig';
 
 interface ChatMessage {
   id: string;
@@ -27,20 +30,7 @@ const GREETING: ChatMessage = {
   text: 'Hola, como puedo ayudarte estoy aquí para ti, para escucharte y que me platiques de las cosas de tu día a día, espero que puedas confiar en mí ❤️',
 };
 
-// Guion fijo de demo — Kii siempre responde con esto la primera vez que
-// alguien escribe, sin importar el contenido del mensaje (no hay IA real).
-const SCRIPTED_RESPONSE_1 =
-  'Lamento mucho que te sientas así. Es completamente válido estar abrumado por la presión, pero no tienes que pasar por esto solo. Tu bienestar es la prioridad.';
 
-const SCRIPTED_RESPONSE_2: ChatMessage = {
-  id: 'scripted-2',
-  sender: 'kii',
-  text: 'Tengo unas opciones de especialistas que encontré cerca de tu ubicación',
-  linkLabel: 'Haz clic aquí',
-};
-
-const FOLLOW_UP_RESPONSE =
-  'Estoy aquí para ti. Cuéntame lo que necesites, con calma.';
 
 function KiiAvatar({ size = 40 }: { size?: number }) {
   return (
@@ -54,8 +44,41 @@ export default function KiiChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [hasPlayedScript, setHasPlayedScript] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setIsLoadingHistory(false);
+        return;
+      }
+
+      try {
+        const history = await aiConfigService.getCurrentDayHistory(currentUser.uid);
+        if (history && history.length > 0) {
+          const mappedMessages: ChatMessage[] = history.map((m, index) => ({
+            id: `history-${index}-${Date.now()}`,
+            sender: m.role === 'user' ? 'user' : 'kii',
+            text: m.content
+          }));
+          setMessages(mappedMessages);
+        }
+
+        // Ejecutar limpieza de historiales antiguos (> 7 días) en segundo plano
+        dailySummaryService.cleanupExpiredChatHistory(currentUser.uid)
+          .catch(err => console.error('Error en limpieza de historial:', err));
+
+      } catch (error) {
+        console.error('Error al precargar historial:', error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -67,25 +90,44 @@ export default function KiiChatScreen() {
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || isTyping || isLoadingHistory) return;
 
-    addMessage({ id: `user-${Date.now()}`, sender: 'user', text });
+    // 1. Agregar mensaje del usuario a la UI
+    const userMsg: ChatMessage = { id: `user-${Date.now()}`, sender: 'user', text };
+    addMessage(userMsg);
     setInputText('');
 
     setIsTyping(true);
-    await delay(1000);
-    setIsTyping(false);
 
-    if (!hasPlayedScript) {
-      setHasPlayedScript(true);
-      addMessage({ id: `kii-${Date.now()}`, sender: 'kii', text: SCRIPTED_RESPONSE_1 });
+    try {
+      // 2. Mapear historial al contrato role/content para OpenAI
+      const history = messages.slice(-10).map(msg => ({
+        role: (msg.sender === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: msg.text
+      }));
 
-      setIsTyping(true);
-      await delay(1200);
+      // 3. Única llamada coordinada al servicio de IA
+      const response = await aiConfigService.chatWithAI({
+        text,
+        history
+      });
+
+      // 4. Agregar respuesta de Kii
+      addMessage({
+        id: `kii-${Date.now()}`,
+        sender: 'kii',
+        text: response.reply
+      });
+
+    } catch (err) {
+      console.error('Error en el flujo de chat:', err);
+      addMessage({
+        id: `kii-error-${Date.now()}`,
+        sender: 'kii',
+        text: 'Lo siento, tuve un problema al procesar tu mensaje. ¿Podrías repetirme eso? ❤️'
+      });
+    } finally {
       setIsTyping(false);
-      addMessage({ ...SCRIPTED_RESPONSE_2, id: `kii-${Date.now()}-2` });
-    } else {
-      addMessage({ id: `kii-${Date.now()}`, sender: 'kii', text: FOLLOW_UP_RESPONSE });
     }
   };
 
@@ -145,6 +187,13 @@ export default function KiiChatScreen() {
               <View style={[styles.bubble, styles.bubbleKii, styles.typingBubble]}>
                 <Text style={styles.typingText}>Kii está escribiendo...</Text>
               </View>
+            </View>
+          )}
+
+          {isLoadingHistory && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#4CAF50" />
+              <Text style={styles.loadingText}>Cargando conversación...</Text>
             </View>
           )}
         </ScrollView>
@@ -227,4 +276,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 8,
   },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row'
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#9E9E9E',
+    marginLeft: 8,
+    fontStyle: 'italic'
+  }
 });

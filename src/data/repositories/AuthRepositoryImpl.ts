@@ -41,80 +41,113 @@ const userProfileRepository = new UserProfileRepositoryImpl();
 
 export class AuthRepositoryImpl implements AuthRepository {
   async login(email: string, password: string): Promise<UserEntity | null> {
-    const result = await signInWithEmailAndPassword(auth, email, password).catch((error) => {
-      throw new Error(handleFirebaseError(error as AuthError));
-    });
+    const result = await signInWithEmailAndPassword(auth, email, password).catch(
+      (error) => {
+        throw new Error(handleFirebaseError(error as AuthError));
+      }
+    );
 
     const user = result.user;
 
-    // Firestore no debe impedir el acceso a una cuenta autenticada. El perfil
-    // se repara cuando las reglas permiten la operación, pero un fallo de red
-    // o de permisos no invalida las credenciales de Firebase Auth.
-    try {
-      let profile = await userProfileRepository.getUserProfile(user.uid);
-      if (!profile) {
-        await userProfileRepository.createUserProfile({
-          uid: user.uid,
-          email: user.email ?? '',
-          profileType: 'normal',
-          generalInfo: {
-            username: user.displayName ?? '',
-          },
-          disabled: false,
-        });
-        profile = await userProfileRepository.getUserProfile(user.uid);
-      }
+    // Auto-reparación: si esta cuenta no tiene un documento de perfil
+    // en Firestore, se crea para que aparezca en el panel de administración.
+    let profile = await userProfileRepository.getUserProfile(user.uid);
 
-      if (profile?.disabled) {
-        await signOut(auth);
-        throw new Error('Tu cuenta ha sido dada de baja. Contacta al administrador.');
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('dada de baja')) {
-        throw error;
-      }
-      console.warn('No se pudo comprobar el perfil de Firestore durante el login:', error);
+    if (!profile) {
+      await userProfileRepository.createUserProfile({
+        uid: user.uid,
+        email: user.email ?? '',
+        profileType: 'normal',
+        generalInfo: {
+          nombres: user.displayName ?? '',
+          primerApellido: '',
+          segundoApellido: '',
+        },
+        disabled: false,
+      });
+
+      profile = await userProfileRepository.getUserProfile(user.uid);
+    }
+
+    if (profile?.disabled) {
+      await signOut(auth);
+      throw new Error('Tu cuenta ha sido dada de baja. Contacta al administrador.');
     }
 
     return {
       id: user.uid,
       email: user.email ?? '',
       name: user.displayName ?? '',
+      nombres: user.displayName ?? '',
+      primerApellido: '',
+      segundoApellido: '',
       emailVerified: user.emailVerified,
     };
   }
 
-  async register(email: string, password: string, fullName?: string): Promise<UserEntity | null> {
+  async register(
+    email: string,
+    password: string,
+    names: {
+      nombres: string;
+      primerApellido: string;
+      segundoApellido: string;
+    }
+  ): Promise<UserEntity | null> {
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const { nombres, primerApellido, segundoApellido } = names;
+
+      const fullName = `${nombres} ${primerApellido} ${segundoApellido}`.trim();
+
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       if (fullName) {
-        await updateProfile(result.user, { displayName: fullName });
+        await updateProfile(result.user, {
+          displayName: fullName,
+        });
       }
 
+      // Crear el documento de perfil en Firestore.
       try {
         await userProfileRepository.createUserProfile({
           uid: result.user.uid,
           email: result.user.email ?? '',
           profileType: 'normal',
           generalInfo: {
-            username: fullName ?? '',
+            nombres,
+            primerApellido,
+            segundoApellido,
           },
           disabled: false,
         });
       } catch (profileError) {
-        console.error('❌ Error al crear el perfil del usuario en Firestore:', profileError);
+        console.error(
+          '❌Error al crear el perfil del usuario en Firestore:',
+          profileError
+        );
       }
 
+      // Enviar correo de verificación.
       try {
         await sendEmailVerification(result.user);
       } catch (verificationError) {
-        console.warn('No se pudo enviar el correo de verificación al registrar:', verificationError);
+        console.warn(
+          'No se pudo enviar el correo de verificación al registrar:',
+          verificationError
+        );
       }
 
       return {
         id: result.user.uid,
         email: result.user.email ?? '',
-        name: fullName ?? '',
+        name: fullName,
+        nombres,
+        primerApellido,
+        segundoApellido,
         emailVerified: result.user.emailVerified,
       };
     } catch (error) {
@@ -136,23 +169,31 @@ export class AuthRepositoryImpl implements AuthRepository {
 
   async sendVerificationEmail(): Promise<void> {
     if (!auth.currentUser) return;
+
     await sendEmailVerification(auth.currentUser);
   }
 
   async reloadCurrentUser(): Promise<UserEntity | null> {
     if (!auth.currentUser) return null;
+
     await reload(auth.currentUser);
+
     const user = auth.currentUser;
+
     return {
       id: user.uid,
       email: user.email ?? '',
       name: user.displayName ?? '',
+      nombres: user.displayName ?? '',
+      primerApellido: '',
+      segundoApellido: '',
       emailVerified: user.emailVerified,
     };
   }
 
   async isAccountDisabled(uid: string): Promise<boolean> {
     const profile = await userProfileRepository.getUserProfile(uid);
+
     return profile?.disabled === true;
   }
 }
