@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "KeeperGo",
-    "slug": "keepergo-app",
+    "slug": "keepergo",
     "scheme": "keepergo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -31,6 +31,13 @@
       "@react-native-community/datetimepicker",
       "expo-status-bar",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1cb9ad91-a41f-487e-9d88-898aa3671571"
+      }
+    },
+    "owner": "lyann-mm"
   }
 }
