@@ -5,7 +5,7 @@
     "scheme": "keepergo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon-KeeperGo.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -16,7 +16,7 @@
       "package": "com.keepergo.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon-KeeperGo.png",
         "backgroundColor": "#ffffff"
       }
     },
