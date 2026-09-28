@@ -9,8 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { aiConfigService } from '../../services/aiConfigService';
@@ -34,13 +35,16 @@ const GREETING: ChatMessage = {
 
 function KiiAvatar({ size = 40 }: { size?: number }) {
   return (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Ionicons name="happy" size={size * 0.6} color="#fff" />
-    </View>
+    <Image
+      source={require('../../../assets/images/kii-avatar.jpg')}
+      style={{ width: size, height: size, borderRadius: size / 2 }}
+      resizeMode="cover"
+    />
   );
 }
 
 export default function KiiChatScreen() {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -148,7 +152,7 @@ export default function KiiChatScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
@@ -198,7 +202,7 @@ export default function KiiChatScreen() {
           )}
         </ScrollView>
 
-        <View style={styles.inputBar}>
+        <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
           <TextInput
             style={styles.input}
             placeholder="Escribe tu Texto....."

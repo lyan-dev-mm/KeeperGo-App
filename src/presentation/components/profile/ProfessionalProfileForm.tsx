@@ -7,6 +7,7 @@ import { datosNonStopService, ProfessionalData } from '../../../infrastructure/a
 import { CustomToast } from '../common/CustomToast';
 import { useToast } from '../../hooks/useToast';
 import { validateTitularIdentity } from '../../../utils/validators';
+import { validateProfessionalCategory, HealthCategory } from '../../../utils/professionalClassifier';
 import { getUserProfile } from '../../../infrastructure/firebase/userProfileService';
 import { auth } from '../../../infrastructure/firebase/firebaseConfig';
 
@@ -30,6 +31,9 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
     curp: '', // Número de Cédula
     photo: null as { url: string; publicId: string } | null,
     professionalVerified: false,
+    isHealthProfessional: false,
+    healthCategory: null as HealthCategory | null,
+    normalizedProfession: '',
     institucion: '',
     nivelEducativo: '',
     areaConocimiento: '',
@@ -104,6 +108,12 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
           nivelEducativo: formData.nivelEducativo,
           areaConocimiento: formData.areaConocimiento,
           subareaConocimiento: formData.subareaConocimiento,
+        },
+        verification: {
+          professionalVerified: formData.professionalVerified,
+          isHealthProfessional: formData.isHealthProfessional,
+          healthCategory: formData.healthCategory,
+          normalizedProfession: formData.normalizedProfession,
         }
       },
       profileImage: formData.photo
@@ -168,10 +178,16 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
             areaConocimiento: '',
             subareaConocimiento: '',
             professionalVerified: false,
+            isHealthProfessional: false,
+            healthCategory: null,
+            normalizedProfession: '',
           }));
           showToast('La cédula encontrada no corresponde con los datos del usuario registrado.', 'error');
           return;
         }
+
+        // 4. NUEVA ETAPA: Clasificación Profesional (Segunda capa)
+        const classification = validateProfessionalCategory(result.data);
 
         // Aprobar: Cédula verificada e identidad confirmada
         setVerificationStatus('verified');
@@ -184,8 +200,18 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
           areaConocimiento: result.data!.areaConocimiento,
           subareaConocimiento: result.data!.subareaConocimiento,
           professionalVerified: true,
+          isHealthProfessional: classification.isHealthProfessional,
+          healthCategory: classification.healthCategory,
+          normalizedProfession: classification.normalizedProfession,
         }));
-        showToast('Cédula profesional verificada correctamente.', 'success');
+
+        if (classification.isHealthProfessional && classification.healthCategory === 'psychology') {
+          showToast('Cédula profesional verificada correctamente como Profesional de Psicología.', 'success');
+        } else if (classification.isHealthProfessional) {
+          showToast('Cédula profesional verificada correctamente como Profesional de Salud.', 'success');
+        } else {
+          showToast('Cédula profesional verificada. La profesión no pertenece a la categoría de Psicología.', 'info');
+        }
       } else if (result.status === 'not_found') {
         setVerificationStatus('not_found');
         setFormData(prev => ({
@@ -197,16 +223,31 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
           areaConocimiento: '',
           subareaConocimiento: '',
           professionalVerified: false,
+          isHealthProfessional: false,
+          healthCategory: null,
+          normalizedProfession: '',
         }));
         showToast(result.message || 'No se encontró información asociada a esta cédula profesional.', 'error');
       } else {
         setVerificationStatus('error');
-        setFormData(prev => ({ ...prev, professionalVerified: false }));
+        setFormData(prev => ({
+          ...prev,
+          professionalVerified: false,
+          isHealthProfessional: false,
+          healthCategory: null,
+          normalizedProfession: '',
+        }));
         showToast(result.message || 'Error al verificar la cédula.', 'error');
       }
     } catch (err: any) {
       setVerificationStatus('error');
-      setFormData(prev => ({ ...prev, professionalVerified: false }));
+      setFormData(prev => ({
+        ...prev,
+        professionalVerified: false,
+        isHealthProfessional: false,
+        healthCategory: null,
+        normalizedProfession: '',
+      }));
       showToast(err.message || 'Error inesperado durante la verificación.', 'error');
     }
   };
@@ -221,14 +262,44 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
           </View>
         );
       case 'verified':
-        return (
-          <View style={styles.statusContainer}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <Text style={[styles.statusText, { color: '#4CAF50', fontWeight: 'bold' }]}>
-              Verificada correctamente
-            </Text>
-          </View>
-        );
+        if (formData.isHealthProfessional && formData.healthCategory === 'psychology') {
+          return (
+            <View style={styles.statusBoxSuccess}>
+              <View style={styles.statusRow}>
+                <Ionicons name="checkmark-circle" size={20} color="#2E7D32" />
+                <Text style={styles.statusTitleSuccess}>✓ Cédula profesional verificada</Text>
+              </View>
+              <Text style={styles.statusDetailText}>✓ Profesión: {formData.specialty || 'Psicología'}</Text>
+              <Text style={styles.statusDetailText}>✓ Profesional de salud verificado</Text>
+            </View>
+          );
+        } else if (formData.isHealthProfessional) {
+          return (
+            <View style={styles.statusBoxSuccess}>
+              <View style={styles.statusRow}>
+                <Ionicons name="checkmark-circle" size={20} color="#2E7D32" />
+                <Text style={styles.statusTitleSuccess}>✓ Cédula profesional verificada</Text>
+              </View>
+              <Text style={styles.statusDetailText}>✓ Profesión: {formData.specialty}</Text>
+              <Text style={styles.statusDetailText}>✓ Profesional de salud verificado</Text>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.statusBoxInfo}>
+              <View style={styles.statusRow}>
+                <Ionicons name="checkmark-circle" size={20} color="#2E7D32" />
+                <Text style={styles.statusTitleSuccess}>✓ Cédula profesional verificada</Text>
+              </View>
+              <Text style={[styles.statusDetailText, { marginTop: 4, fontWeight: '600' }]}>
+                Profesión registrada: {formData.specialty || 'No especificada'}
+              </Text>
+              <Text style={styles.statusNoticeText}>
+                Esta profesión no pertenece actualmente a las categorías profesionales habilitadas para el perfil de Psicología de KeeperGo.
+              </Text>
+            </View>
+          );
+        }
       case 'not_found':
         return (
           <View style={styles.statusContainer}>
@@ -651,5 +722,42 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     color: '#666',
+  },
+  statusBoxSuccess: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  statusBoxInfo: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#FFE082',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusTitleSuccess: {
+    color: '#2E7D32',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  statusDetailText: {
+    color: '#333333',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  statusNoticeText: {
+    color: '#5D4037',
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 16,
   },
 });
