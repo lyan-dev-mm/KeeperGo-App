@@ -63,7 +63,19 @@ export default function HomeScreen() {
   const profileImageUrl = profile?.profileImage?.url;
 
   const menuItems: DrawerMenuItem[] = [
-    { label: 'Perfil', onPress: () => setShowProfileModal(true) },
+    {
+      label: 'Perfil',
+      onPress: () => {
+        if (profile?.profileCompleted && profile?.profileType) {
+          router.push({
+            pathname: '/profile-setup',
+            params: { type: profile.profileType },
+          });
+        } else {
+          setShowProfileModal(true);
+        }
+      },
+    },
     { label: 'Comunidad de hábitos', onPress: () => router.push('/(tabs)/habits') },
     { label: 'Bitácora de emociones', onPress: () => router.push('/(tabs)/bitacora') },
     { label: 'Zona de relajación', onPress: () => router.push('/zona-relajacion') },

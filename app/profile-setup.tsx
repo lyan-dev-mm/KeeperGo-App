@@ -7,7 +7,7 @@ import { ProfessionalProfileForm } from '../src/presentation/components/profile/
 import { InstitutionProfileForm } from '../src/presentation/components/profile/InstitutionProfileForm';
 import { saveUserProfile } from '../src/infrastructure/firebase/userProfileService';
 
-type ProfileType = 'user' | 'professional' | 'institution';
+type ProfileType = 'user' | 'normal' | 'professional' | 'institution';
 
 const ProfileSetupScreen = () => {
   const { type } = useLocalSearchParams<{ type: ProfileType }>();
@@ -17,19 +17,29 @@ const ProfileSetupScreen = () => {
 
   const getSteps = () => {
     switch (type) {
-      case 'user': return 1;
-      case 'professional': return 2;
-      case 'institution': return 3;
-      default: return 1;
+      case 'user':
+      case 'normal':
+        return 1;
+      case 'professional':
+        return 2;
+      case 'institution':
+        return 3;
+      default:
+        return 1;
     }
   };
 
   const getTitle = () => {
     switch (type) {
-      case 'user': return 'Perfil de Usuario';
-      case 'professional': return 'Perfil Profesional';
-      case 'institution': return 'Perfil Institucional';
-      default: return 'Personalización';
+      case 'user':
+      case 'normal':
+        return 'Perfil de Usuario';
+      case 'professional':
+        return 'Perfil Profesional';
+      case 'institution':
+        return 'Perfil Institucional';
+      default:
+        return 'Personalización';
     }
   };
 
@@ -62,6 +72,7 @@ const ProfileSetupScreen = () => {
   const renderForm = () => {
     switch (type) {
       case 'user':
+      case 'normal':
         return (
           <NormalProfileForm
             onBack={handleBack}

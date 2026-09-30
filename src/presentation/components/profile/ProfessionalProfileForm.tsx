@@ -92,6 +92,7 @@ export function ProfessionalProfileForm({ onBack, onFinish, onStepChange }: Prof
 
     onFinish({
       profileType: 'professional',
+      profileCompleted: true,
       phone: formData.phone || undefined,
       email: formData.email,
       professionalInfo: {

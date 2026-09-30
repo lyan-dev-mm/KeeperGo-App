@@ -176,6 +176,7 @@ export function InstitutionProfileForm({ onBack, onFinish, onStepChange }: Insti
 
     onFinish({
       profileType: 'institution',
+      profileCompleted: true,
       institutionInfo: {
         institutionName: name,
         legalName: legalName.trim() || undefined,
@@ -186,20 +187,33 @@ export function InstitutionProfileForm({ onBack, onFinish, onStepChange }: Insti
         department: departments.filter(d => d.trim() !== '').join(', '),
         facility: facilities.filter(f => f.trim() !== '').join(', '),
         email: contactEmail,
-        taxAddress: postalCode.trim() ? {
-          postalCode: postalCode.trim(),
-          fullAddress: address || undefined,
-        } : undefined,
+        taxAddress: postalCode.trim()
+          ? {
+              postalCode: postalCode.trim(),
+              fullAddress: address || undefined,
+            }
+          : undefined,
         serviceSchedule: {
           hours: serviceHours
         },
         verification: {
-          status: verificationStatus === 'verified' ? 'verified' : verificationStatus === 'rejected' ? 'rejected' : 'unverified',
+          status:
+            verificationStatus === 'verified'
+              ? 'verified'
+              : verificationStatus === 'rejected'
+                ? 'rejected'
+                : 'unverified',
           rfcVerified: verificationDetails.rfcVerified,
           legalNameVerified: verificationDetails.legalNameVerified,
           taxAddressVerified: verificationDetails.taxAddressVerified,
-          verifiedAt: verificationStatus === 'verified' ? new Date().toISOString() : null,
-          verificationMethod: verificationStatus === 'verified' ? 'datos_non_stop' : undefined,
+          verifiedAt:
+            verificationStatus === 'verified'
+              ? new Date().toISOString()
+              : null,
+          verificationMethod:
+            verificationStatus === 'verified'
+              ? 'datos_non_stop'
+              : undefined,
         }
       },
       profileImage: photo
