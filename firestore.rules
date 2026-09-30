@@ -19,9 +19,21 @@ service cloud.firestore {
     // ============================================
 
     match /userProfiles/{uid} {
-      allow read, create, update, delete:
-        if request.auth != null
-        && (request.auth.uid == uid || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if isSignedIn() && (request.auth.uid == uid || isAdmin())
+        && (!('premium' in request.resource.data) || request.resource.data.premium == false || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid == uid || isAdmin())
+        && (
+          isAdmin() ||
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['premium']) ||
+          request.resource.data.premium == resource.data.premium
+        );
+      allow delete: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+
+      match /usage/{month} {
+        allow read, write: if isSignedIn()
+          && (request.auth.uid == uid || isAdmin());
+      }
     }
 
     match /downloads/{downloadId} {

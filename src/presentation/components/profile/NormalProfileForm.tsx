@@ -36,6 +36,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
 
   useEffect(() => {
     let isMounted = true;
+
     getUserProfile()
       .then((profile) => {
         if (isMounted && profile) {
@@ -45,16 +46,20 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
               primerApellido: profile.generalInfo.primerApellido || '',
               segundoApellido: profile.generalInfo.segundoApellido || '',
             });
+
             if (profile.generalInfo.username) {
               setUsername(profile.generalInfo.username);
             }
+
             if (profile.generalInfo.shortDescription) {
               setBio(profile.generalInfo.shortDescription);
             }
           }
+
           if (profile.phone) {
             setPhone(profile.phone);
           }
+
           if (profile.profileImage) {
             setPhoto(profile.profileImage);
           }
@@ -75,9 +80,11 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+
     if (!username.trim()) {
       newErrors.username = 'El nombre de usuario es obligatorio';
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,6 +93,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
     if (validate()) {
       onFinish({
         profileType: 'normal',
+        profileCompleted: true,
         phone: phone || undefined,
         generalInfo: {
           nombres: existingGeneralInfo.nombres,
@@ -112,6 +120,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
       }
 
       const mimeType = selectedImage.mimeType || '';
+
       if (!SUPPORTED_FORMATS.includes(mimeType.toLowerCase())) {
         showToast('Formato de imagen no soportado. Usa JPG, PNG o WEBP.', 'error');
         setIsUploading(false);
@@ -119,6 +128,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
       }
 
       const { uploadImageToCloudinary } = require('../../../infrastructure/cloudinary/cloudinaryService');
+
       const uploadedImage = await uploadImageToCloudinary({
         uri: selectedImage.uri,
         fileName: selectedImage.fileName,
@@ -130,6 +140,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
           url: uploadedImage.secure_url,
           publicId: uploadedImage.public_id,
         });
+
         showToast('Imagen actualizada con éxito', 'success');
       }
     } catch (error: any) {
@@ -162,6 +173,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
 
       <View style={styles.field}>
         <Text style={styles.label}>Nombre de usuario / Alias *</Text>
+
         <TextInput
           style={[styles.input, errors.username && styles.inputError]}
           placeholder="Tu alias público (ej. JuanP)"
@@ -169,11 +181,15 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
           onChangeText={setUsername}
           autoCapitalize="none"
         />
-        {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+
+        {errors.username && (
+          <Text style={styles.errorText}>{errors.username}</Text>
+        )}
       </View>
 
       <View style={styles.field}>
         <Text style={styles.label}>Frase o descripción corta</Text>
+
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Algo sobre ti..."
@@ -186,6 +202,7 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
 
       <View style={styles.field}>
         <Text style={styles.label}>Número de teléfono</Text>
+
         <TextInput
           style={styles.input}
           placeholder="+00 000 000 000"
@@ -195,7 +212,10 @@ export function NormalProfileForm({ onBack, onFinish }: NormalProfileFormProps) 
         />
       </View>
 
-      <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+      <TouchableOpacity
+        style={styles.finishButton}
+        onPress={handleFinish}
+      >
         <Text style={styles.finishButtonText}>Finalizar</Text>
       </TouchableOpacity>
 
@@ -214,6 +234,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 20,
   },
+
   photoCircle: {
     width: 120,
     height: 120,
@@ -225,27 +246,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#EEE',
   },
+
   image: {
     width: '100%',
     height: '100%',
   },
+
   placeholder: {
     alignItems: 'center',
   },
+
   addPhotoText: {
     fontSize: 12,
     color: '#9E9E9E',
     marginTop: 4,
   },
+
   field: {
     marginBottom: 20,
   },
+
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
   },
+
   input: {
     borderWidth: 1,
     borderColor: '#CCC',
@@ -255,18 +282,22 @@ const styles = StyleSheet.create({
     color: '#333',
     backgroundColor: '#fff',
   },
+
   inputError: {
     borderColor: Colors.error,
   },
+
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
+
   errorText: {
     color: Colors.error,
     fontSize: 12,
     marginTop: 4,
   },
+
   finishButton: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
@@ -274,6 +305,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
+
   finishButtonText: {
     color: '#fff',
     fontWeight: 'bold',

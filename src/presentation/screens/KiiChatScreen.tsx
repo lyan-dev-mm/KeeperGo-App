@@ -120,7 +120,8 @@ export default function KiiChatScreen() {
       addMessage({
         id: `kii-${Date.now()}`,
         sender: 'kii',
-        text: response.reply
+        text: response.reply,
+        linkLabel: response.linkLabel
       });
 
     } catch (err) {
@@ -135,9 +136,12 @@ export default function KiiChatScreen() {
     }
   };
 
-  // ✅ CAMBIO AQUÍ: Ahora navega a la lista de especialistas
-  const handleLinkPress = () => {
-    router.push('/specialists');
+  const handleLinkPress = (label?: string) => {
+    if (label?.toLowerCase().includes('premium') || label?.toLowerCase().includes('plan')) {
+      router.push('/(modals)/Paywall');
+    } else {
+      router.push('/specialists');
+    }
   };
 
   return (
@@ -177,7 +181,7 @@ export default function KiiChatScreen() {
               >
                 <Text style={styles.bubbleText}>{msg.text}</Text>
                 {msg.linkLabel && (
-                  <TouchableOpacity onPress={handleLinkPress}>
+                  <TouchableOpacity onPress={() => handleLinkPress(msg.linkLabel)}>
                     <Text style={styles.linkText}>{msg.linkLabel}</Text>
                   </TouchableOpacity>
                 )}

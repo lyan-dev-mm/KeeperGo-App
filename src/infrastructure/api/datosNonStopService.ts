@@ -69,8 +69,16 @@ export const datosNonStopService = {
    * @returns A promise that resolves to a VerificationResult.
    */
   async verifyLicense(licenseNumber: string): Promise<VerificationResult> {
+    const cleanLicense = licenseNumber ? licenseNumber.trim().replace(/\s+/g, '') : '';
+    if (!cleanLicense) {
+      return {
+        status: 'error',
+        message: 'Ingresa un número de cédula profesional válido.'
+      };
+    }
+
     if (!API_KEY) {
-      console.error('[DatosNonStopService] API Key is missing in environment variables.');
+      console.error('[DatosNonStopService] API Key no configurada en las variables de entorno.');
       return {
         status: 'error',
         message: 'Configuración incompleta. Contacte a soporte.'
@@ -78,18 +86,40 @@ export const datosNonStopService = {
     }
 
     try {
-      const response = await fetch(`${SEP_API_URL}?numero=${licenseNumber}`, {
-        method: 'GET',
+      const response = await fetch(SEP_API_URL, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${API_KEY}`,
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          numeroCedula: cleanLicense
+        })
       });
 
-      const result = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const rawText = await response.text();
 
-      if (response.status === 200 && result.status === 'found') {
-        const d = result.data || {};
+      let result: any = null;
+      if (contentType.includes('application/json')) {
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          // Fallback handled safely by checking !result
+        }
+      }
+
+      // Si la respuesta HTTP falló o el servidor devolvió un cuerpo no-JSON (ej. HTTP 404 page not found)
+      if (!result || (!response.ok && response.status !== 200 && response.status !== 404)) {
+        return {
+          status: 'error',
+          message: 'No pudimos verificar la cédula en este momento. Revisa tu conexión e inténtalo nuevamente.'
+        };
+      }
+
+      if (response.status === 200 && (result.status === 'found' || result.status === 'success' || result.data)) {
+        const d = result.data || result || {};
         const nombre = d.nombre || d.nombres || '';
         const paterno = d.paterno || d.apellido_paterno || d.apellidoPaterno || d.primer_apellido || '';
         const materno = d.materno || d.apellido_materno || d.apellidoMaterno || d.segundo_apellido || '';
@@ -98,35 +128,34 @@ export const datosNonStopService = {
         return {
           status: 'found',
           data: {
-            profesion: d.profesion || '',
-            carrera: d.carrera || '',
+            profesion: d.profesion || d.carrera || '',
+            carrera: d.carrera || d.profesion || '',
             nivelEducativo: d.nivel_educativo || d.nivelEducativo || '',
             areaConocimiento: d.area_conocimiento || d.areaConocimiento || '',
             subareaConocimiento: d.subarea_conocimiento || d.subareaConocimiento || '',
-            institucion: d.institucion || '',
+            institucion: d.institucion || d.des_institucion || '',
             nombre,
             paterno,
             materno,
             nombreCompleto
           }
         };
-      } else if (result.status === 'not found' || result.status === 'not_found' || response.status === 404) {
+      } else if (result.status === 'not found' || result.status === 'not_found' || result.found === false) {
         return {
           status: 'not_found',
-          message: 'No se encontró información asociada a esta cédula profesional.'
+          message: 'No encontramos esta cédula profesional. Verifica el número e inténtalo nuevamente.'
         };
       } else {
-        console.error('[DatosNonStopService] API Error:', result);
         return {
           status: 'error',
-          message: 'No fue posible verificar la cédula profesional. Inténtalo nuevamente.'
+          message: 'No pudimos verificar la cédula en este momento. Revisa tu conexión e inténtalo nuevamente.'
         };
       }
     } catch (error) {
       console.error('[DatosNonStopService] Network Error:', error);
       return {
         status: 'error',
-        message: 'Error de conexión. Verifica tu internet e inténtalo de nuevo.'
+        message: 'No pudimos verificar la cédula en este momento. Revisa tu conexión e inténtalo nuevamente.'
       };
     }
   },
@@ -139,7 +168,7 @@ export const datosNonStopService = {
    */
   async verifyInstitutionRFC(params: InstitutionRFCParams): Promise<InstitutionVerificationResult> {
     if (!API_KEY) {
-      console.error('[DatosNonStopService] API Key is missing in environment variables.');
+      console.error('[DatosNonStopService] API Key no configurada en las variables de entorno.');
       return {
         status: 'error',
         message: 'Configuración incompleta. Contacte a soporte.'
@@ -164,6 +193,7 @@ export const datosNonStopService = {
       const response = await fetch(SAT_RFC_API_URL, {
         method: 'POST',
         headers: {
+          'x-api-key': API_KEY,
           'Authorization': `Bearer ${API_KEY}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -171,7 +201,24 @@ export const datosNonStopService = {
         body: JSON.stringify(payload)
       });
 
-      const result = await response.json().catch(() => ({}));
+      const contentType = response.headers.get('content-type') || '';
+      const rawText = await response.text();
+
+      let result: any = null;
+      if (contentType.includes('application/json')) {
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          // Fallback handled safely by checking !result
+        }
+      }
+
+      if (!result) {
+        return {
+          status: 'error',
+          message: `No fue posible verificar el RFC (HTTP ${response.status}).`
+        };
+      }
 
       if (response.ok) {
         const isValid = result.valido === true || result.valid === true || result.status === 'valid' || result.status === 'found' || result.status === 'verified' || response.status === 200;
@@ -202,7 +249,6 @@ export const datosNonStopService = {
           message: result.message || result.error || 'No pudimos verificar los datos fiscales de la institución. Revisa el RFC y la información proporcionada.'
         };
       } else {
-        console.error('[DatosNonStopService] SAT RFC API Error:', response.status, result);
         return {
           status: 'error',
           message: 'No fue posible consultar el servicio de verificación fiscal en este momento. Inténtalo más tarde.'

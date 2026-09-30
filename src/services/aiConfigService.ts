@@ -1,5 +1,5 @@
 import { db, auth } from '../infrastructure/firebase/firebaseConfig';
-import { doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
+import { doc, setDoc, getDoc, arrayUnion, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { emotionSummaryService } from './emotionSummaryService';
 import { dailySummaryService } from './dailySummaryService';
 
@@ -22,6 +22,9 @@ export interface AIResponse {
     }>;
   };
   error?: string;
+  limitReached?: boolean;
+  isPremium?: boolean;
+  linkLabel?: string;
 }
 
 /**
@@ -31,6 +34,16 @@ export interface AIResponse {
  * desde el cliente (APK) utilizando variables de entorno de Expo.
  */
 class AIConfigService {
+
+  /**
+   * Obtiene la clave del mes actual en formato YYYY-MM utilizando la fecha local del dispositivo.
+   */
+  get currentMonthKey(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  }
 
   /**
    * Obtiene el historial de mensajes del día actual para el usuario.
@@ -59,8 +72,210 @@ class AIConfigService {
   }
 
   /**
-   * OPERACIÓN CONVERSACIONAL ÚNICA (ARQUITECTURA UNIFICADA OPENAI)
-   * Coordina la respuesta de Kii y el análisis emocional en una sola llamada a OpenAI.
+   * Verifica y reserva 1 unidad de cuota mensual para el usuario en Firestore de forma atómica.
+   * Path: userProfiles/{uid}/usage/{YYYY-MM}
+   */
+  /**
+   * Genera un identificador único para la reserva.
+   */
+  private generateReservationId(): string {
+    return `res_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  /**
+   * Verifica y reserva 1 unidad de cuota mensual para el usuario en Firestore de forma atómica.
+   * Crea una reserva pendiente con identificador único que expira en 2 minutos.
+   * Path: userProfiles/{uid}/usage/{YYYY-MM}
+   */
+  async checkAndReserveQuota(uid: string): Promise<{
+    allowed: boolean;
+    reservationId?: string;
+    isPremium: boolean;
+    limit: number;
+    currentCount: number;
+    monthKey: string;
+  }> {
+    const monthKey = this.currentMonthKey;
+    const userProfileRef = doc(db, 'userProfiles', uid);
+    const usageRef = doc(db, 'userProfiles', uid, 'usage', monthKey);
+
+    return await runTransaction(db, async (transaction) => {
+      const profileSnap = await transaction.get(userProfileRef);
+      const usageSnap = await transaction.get(usageRef);
+
+      const isPremium = profileSnap.exists() ? profileSnap.data()?.premium === true : false;
+
+      let bonusMessages = 0;
+      let monthPremium = isPremium;
+
+      const usageData = usageSnap.exists() ? usageSnap.data() : null;
+      const currentCount = usageData?.messageCount || 0;
+
+      if (!isPremium) {
+        // Usuario Básico
+        // Si el histórico mensual ya tenía premium: true, preservarlo (Regla 6)
+        if (usageData?.premium) {
+          monthPremium = true;
+        }
+      } else {
+        // Usuario Premium
+        monthPremium = true;
+        // Evaluar regla de beneficio de transición (Regla 15 y 16):
+        // Si usage previo ya tenía bonusMessages: 20, mantenerlo
+        if (usageData?.bonusMessages === 20) {
+          bonusMessages = 20;
+        } else if (usageData && usageData.premium === false) {
+          // El usuario usó Kii este mes como Básico y activó Premium durante el mismo mes
+          bonusMessages = 20;
+        }
+      }
+
+      // Límites: Básico = 20, Premium = 80 (+ 20 si aplica beneficio de transición = 100)
+      const baseLimit = isPremium ? 80 : 20;
+      const effectiveLimit = baseLimit + bonusMessages;
+
+      // Limpiar reservas expiradas (> 2 minutos)
+      const nowMs = Date.now();
+      const EXPIRATION_MS = 2 * 60 * 1000;
+      const pendingReservations: Record<string, { createdAt: number }> = usageData?.pendingReservations || {};
+      const activePending: Record<string, { createdAt: number }> = {};
+      let activePendingCount = 0;
+
+      for (const [resId, resData] of Object.entries(pendingReservations)) {
+        if (resData && typeof resData.createdAt === 'number') {
+          if (nowMs - resData.createdAt < EXPIRATION_MS) {
+            activePending[resId] = resData;
+            activePendingCount++;
+          }
+        }
+      }
+
+      // Consumo actual = mensajes confirmados + reservas pendientes activas
+      const currentConsumption = currentCount + activePendingCount;
+
+      if (currentConsumption >= effectiveLimit) {
+        // Si se limpiaron reservas expiradas, persistir el mapa limpio
+        if (Object.keys(activePending).length !== Object.keys(pendingReservations).length) {
+          transaction.set(usageRef, { pendingReservations: activePending }, { merge: true });
+        }
+        return {
+          allowed: false,
+          isPremium,
+          limit: effectiveLimit,
+          currentCount: currentConsumption,
+          monthKey
+        };
+      }
+
+      // Generar nuevo reservationId único y registrar reserva pendiente
+      const reservationId = this.generateReservationId();
+      activePending[reservationId] = { createdAt: nowMs };
+
+      const updateData: any = {
+        month: monthKey,
+        messageCount: currentCount, // NO incrementar messageCount
+        pendingReservations: activePending,
+        premium: monthPremium,
+        lastUpdated: serverTimestamp()
+      };
+      if (bonusMessages > 0) {
+        updateData.bonusMessages = bonusMessages;
+      }
+
+      transaction.set(usageRef, updateData, { merge: true });
+
+      return {
+        allowed: true,
+        reservationId,
+        isPremium,
+        limit: effectiveLimit,
+        currentCount: currentConsumption + 1,
+        monthKey
+      };
+    });
+  }
+
+  /**
+   * Confirma la reserva de cuota convirtiéndola en consumo real (messageCount + 1).
+   * Elimina la reserva de pendingReservations. Si la reserva no existe, es un no-op idempotente.
+   */
+  async confirmQuotaReservation(uid: string, monthKey: string, reservationId: string): Promise<boolean> {
+    if (!reservationId) return false;
+    try {
+      const usageRef = doc(db, 'userProfiles', uid, 'usage', monthKey);
+      return await runTransaction(db, async (transaction) => {
+        const usageSnap = await transaction.get(usageRef);
+        if (!usageSnap.exists()) return false;
+
+        const usageData = usageSnap.data();
+        const pendingReservations: Record<string, { createdAt: number }> = usageData?.pendingReservations || {};
+
+        if (!(reservationId in pendingReservations)) {
+          // La reserva no existe o ya fue confirmada/liberada/expirada. No duplicar consumo.
+          return false;
+        }
+
+        // Eliminar reserva de pendingReservations e incrementar messageCount en +1
+        const remainingPending = { ...pendingReservations };
+        delete remainingPending[reservationId];
+
+        const currentCount = usageData?.messageCount || 0;
+        const newCount = currentCount + 1;
+
+        transaction.update(usageRef, {
+          messageCount: newCount,
+          pendingReservations: remainingPending,
+          lastUpdated: serverTimestamp()
+        });
+
+        return true;
+      });
+    } catch (err) {
+      console.error('[AIConfig] Error al confirmar reserva de cuota:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Libera una reserva pendiente eliminándola de pendingReservations sin modificar messageCount.
+   * Si la reserva no existe o ya fue liberada/confirmada, es un no-op idempotente.
+   */
+  async releaseQuotaReservation(uid: string, monthKey: string, reservationId: string): Promise<boolean> {
+    if (!reservationId) return false;
+    try {
+      const usageRef = doc(db, 'userProfiles', uid, 'usage', monthKey);
+      return await runTransaction(db, async (transaction) => {
+        const usageSnap = await transaction.get(usageRef);
+        if (!usageSnap.exists()) return false;
+
+        const usageData = usageSnap.data();
+        const pendingReservations: Record<string, { createdAt: number }> = usageData?.pendingReservations || {};
+
+        if (!(reservationId in pendingReservations)) {
+          // La reserva no existe o ya fue liberada/confirmada. No-op.
+          return false;
+        }
+
+        // Eliminar la reserva de pendingReservations sin modificar messageCount
+        const remainingPending = { ...pendingReservations };
+        delete remainingPending[reservationId];
+
+        transaction.update(usageRef, {
+          pendingReservations: remainingPending,
+          lastUpdated: serverTimestamp()
+        });
+
+        return true;
+      });
+    } catch (err) {
+      console.error('[AIConfig] Error al liberar reserva de cuota:', err);
+      return false;
+    }
+  }
+
+  /**
+   * OPERACIÓN CONVERSACIONAL ÚNICA (ARQUITECTURA UNIFICADA OPENAI CON CONTROL DE CUOTA)
+   * Coordina la comprobación de cuota, la respuesta de Kii y el análisis emocional.
    */
   async chatWithAI(params: { text: string; history: ChatHistoryMessage[] }): Promise<AIResponse> {
     const { text, history } = params;
@@ -74,10 +289,49 @@ class AIConfigService {
       };
     }
 
+    const currentUser = auth.currentUser;
+    let reservation: {
+      allowed: boolean;
+      reservationId?: string;
+      isPremium: boolean;
+      limit: number;
+      currentCount: number;
+      monthKey: string;
+    } | null = null;
+
+    let hasProcessedQuota = false;
+
+    // 0. Comprobar y reservar cuota mensual ANTES de llamar a OpenAI
+    if (currentUser?.uid) {
+      try {
+        reservation = await this.checkAndReserveQuota(currentUser.uid);
+
+        if (!reservation.allowed) {
+          const reply = reservation.isPremium
+            ? 'Parece que te ha gustado hablar con Kii, y somos conscientes de ello. Es por eso que estamos preparando futuros planes para mejorar tu experiencia y facilitar aún más el acceso a nuestras funciones.'
+            : 'Hemos llegado al límite de nuestra conversación. Si te encanta esta función, puedes aumentar el límite del chat suscribiéndote a la versión Premium.';
+
+          return {
+            success: false,
+            reply,
+            limitReached: true,
+            isPremium: reservation.isPremium,
+            linkLabel: reservation.isPremium ? undefined : 'Ver versión Premium'
+          };
+        }
+      } catch (quotaErr: any) {
+        console.error('[AIConfig] Error al verificar cuota mensual:', quotaErr);
+        return {
+          success: false,
+          reply: 'Lo siento, ocurrió un error al verificar tu cuota de mensajes. Por favor intenta de nuevo.',
+          error: quotaErr.message
+        };
+      }
+    }
+
     try {
       // 1. Obtener memoria contextual de resúmenes anteriores (Día -1 y Día -2)
       let memoryPromptSection = '';
-      const currentUser = auth.currentUser;
 
       if (currentUser?.uid) {
         try {
@@ -141,7 +395,7 @@ DEBES RESPONDER EXCLUSIVAMENTE EN FORMATO JSON CON ESTA ESTRUCTURA:
 }
 Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los scores deben ser números entre 0 y 1.${memoryPromptSection}`;
 
-      // 2. Llamada unificada a OpenAI (gpt-4o-mini) con JSON Mode
+      // 3. Llamada unificada a OpenAI (gpt-4o-mini) con JSON Mode
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -179,7 +433,7 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
         throw new Error('Respuesta vacía de OpenAI');
       }
 
-      // 3. Parseo y validación del JSON generado por el modelo
+      // 4. Parseo y validación del JSON generado por el modelo
       let parsedData;
       try {
         parsedData = JSON.parse(content);
@@ -207,7 +461,7 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
         top_emotions
       };
 
-      // 4. Persistencia en Firestore (Estructura Diaria por Periodos)
+      // 5. Persistencia en Firestore (Estructura Diaria por Periodos)
       if (currentUser && top_emotions.length > 0) {
         try {
           const uid = currentUser.uid;
@@ -232,14 +486,14 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
           // Hora local del dispositivo (0-23)
           const hour = now.getHours();
 
-          // Determinar periodo del día (Basado estrictamente en hora local del dispositivo)
+          // Determinar periodo del día
           let period: 'morning' | 'afternoon' | 'evening';
           if (hour >= 6 && hour < 12) {
-            period = 'morning'; // 06:00 - 11:59
+            period = 'morning';
           } else if (hour >= 12 && hour < 19) {
-            period = 'afternoon'; // 12:00 - 18:59
+            period = 'afternoon';
           } else {
-            period = 'evening'; // 19:00 - 05:59
+            period = 'evening';
           }
 
           const logRef = doc(db, 'users', uid, 'emotion_logs', dateId);
@@ -251,7 +505,6 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
             dominant_emotion
           };
 
-          // Actualización atómica con arrayUnion y merge para inicializar si no existe
           await setDoc(logRef, {
             date: dateId,
             [period]: {
@@ -259,8 +512,6 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
             }
           }, { merge: true });
 
-          // PERSISTENCIA TEMPORAL DEL CHAT (Fase 1 de Historial Diario)
-          // Guardamos los mensajes del usuario y la respuesta de Kii en el historial del día
           const userMsgEntry = {
             role: 'user',
             content: text,
@@ -283,6 +534,12 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
         }
       }
 
+      // 6. Confirmar reserva de cuota en Firestore tras respuesta exitosa de OpenAI
+      if (currentUser?.uid && reservation?.allowed && reservation?.reservationId && !hasProcessedQuota) {
+        hasProcessedQuota = true;
+        await this.confirmQuotaReservation(currentUser.uid, reservation.monthKey, reservation.reservationId);
+      }
+
       return {
         success: true,
         reply: reply,
@@ -291,6 +548,12 @@ Usa emociones estándar (ej: joy, sadness, anger, fear, stress, neutral). Los sc
 
     } catch (error: any) {
       console.error('Error en chatWithAI (Unified Flow):', error.message);
+
+      // Si se realizó una reserva y ocurrió un error, LIBERAR LA RESERVA por reservationId
+      if (currentUser?.uid && reservation?.allowed && reservation?.reservationId && !hasProcessedQuota) {
+        hasProcessedQuota = true;
+        await this.releaseQuotaReservation(currentUser.uid, reservation.monthKey, reservation.reservationId);
+      }
 
       // Clasificación de errores para respuestas empáticas del lado de Kii
       let fallbackReply = 'Lo siento, tuve un problema al procesar tu mensaje. ¿Podrías repetirme eso? Estoy aquí contigo. ❤️';

@@ -2,6 +2,8 @@ export interface UserProfileEntity {
   uid: string;
   email: string;
   profileType: 'normal' | 'professional' | 'institution';
+  profileCompleted?: boolean;
+  premium?: boolean;
   phone?: string;
   disabled?: boolean;
   profileImage?: {
